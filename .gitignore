@@ -39,3 +39,24 @@ parser_gram.h
 parser_lex.c
 
 tags
+
+m4/*
+ltmain.sh
+aclocal.m4
+config.h.in
+Makefile.in
+INSTALL
+compile
+config.guess
+config.sub
+depcomp
+install-sh
+missing
+ylwrap
+configure
+libtool
+*.o
+*.lo
+.dirstamp
+.cache/*
+compile_commands.json
