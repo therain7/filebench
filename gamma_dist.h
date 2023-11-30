@@ -23,15 +23,15 @@
  * Use is subject to license terms.
  */
 
-#ifndef	_FB_GAMMA_DIST_H
-#define	_FB_GAMMA_DIST_H
+#ifndef _FB_GAMMA_DIST_H
+#define _FB_GAMMA_DIST_H
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
+#pragma ident "%Z%%M%	%I%	%E% SMI"
 
 #include "filebench.h"
 
 double gamma_dist_knuth(double a, double b);
-double gamma_dist_knuth_src(double a, double b,
-    double (*src)(unsigned short *), unsigned short *xi);
+double gamma_dist_knuth_src(double a, double b, double (*src)(unsigned short *),
+							unsigned short *xi);
 
-#endif	/* _FB_GAMMA_DIST_H */
+#endif /* _FB_GAMMA_DIST_H */

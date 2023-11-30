@@ -52,8 +52,9 @@ fb_random64(uint64_t *randp, uint64_t max, uint64_t round, avd_t avd)
 		if (!AVD_IS_RANDOM(avd)) {
 			/* trying to get random value not from
 				random variable. That's a clear error. */
-			filebench_log(LOG_ERROR, "filebench_randomno64: trying"
-			" to get a random value from not a random variable");
+			filebench_log(LOG_ERROR,
+						  "filebench_randomno64: trying"
+						  " to get a random value from not a random variable");
 			filebench_shutdown(1);
 			/* NOT REACHABLE */
 		} else {
@@ -88,8 +89,7 @@ fb_random64(uint64_t *randp, uint64_t max, uint64_t round, avd_t avd)
  */
 
 void
-fb_random32(uint32_t *randp,
-		uint32_t max, uint32_t round, avd_t avd)
+fb_random32(uint32_t *randp, uint32_t max, uint32_t round, avd_t avd)
 {
 	uint64_t rand64;
 
@@ -138,7 +138,7 @@ fb_rand_src_random(unsigned short *xi)
 static double
 rand_uniform_get(randdist_t *rndp)
 {
-	double		dprob, dmin, dres, dround;
+	double dprob, dmin, dres, dround;
 
 	dmin = (double)rndp->rnd_vint_min;
 	dround = (double)rndp->rnd_vint_round;
@@ -160,15 +160,16 @@ rand_uniform_get(randdist_t *rndp)
 static double
 rand_gamma_get(randdist_t *rndp)
 {
-	double		dmult, dres, dmin, dround;
+	double dmult, dres, dmin, dround;
 
 	dmin = (double)rndp->rnd_vint_min;
 	dround = (double)rndp->rnd_vint_round;
 
 	dmult = (rndp->rnd_dbl_mean - dmin) / rndp->rnd_dbl_gamma;
 
-	dres = gamma_dist_knuth_src(rndp->rnd_dbl_gamma,
-	    dmult, rndp->rnd_src, rndp->rnd_xi) + dmin;
+	dres = gamma_dist_knuth_src(rndp->rnd_dbl_gamma, dmult, rndp->rnd_src,
+								rndp->rnd_xi) +
+		   dmin;
 
 	if (dround == 0.0)
 		return (dres);
@@ -183,8 +184,8 @@ rand_gamma_get(randdist_t *rndp)
 static double
 rand_table_get(randdist_t *rndp)
 {
-	double		dprob, dprcnt, dtabres, dsclres, dmin, dround;
-	int		idx;
+	double dprob, dprcnt, dtabres, dsclres, dmin, dround;
+	int idx;
 
 	dmin = (double)rndp->rnd_vint_min;
 	dround = (double)rndp->rnd_vint_round;
@@ -195,7 +196,7 @@ rand_table_get(randdist_t *rndp)
 	idx = (int)dprcnt;
 
 	dtabres = (rndp->rnd_rft[idx].rf_base +
-	    (rndp->rnd_rft[idx].rf_range * (dprcnt - (double)idx)));
+			   (rndp->rnd_rft[idx].rf_range * (dprcnt - (double)idx)));
 
 	dsclres = (dtabres * (rndp->rnd_dbl_mean - dmin)) + dmin;
 
@@ -212,17 +213,17 @@ static void
 rand_seed_set(randdist_t *rndp)
 {
 	union {
-		uint64_t  ll;
-		uint16_t  w[4];
+		uint64_t ll;
+		uint16_t w[4];
 	} temp1;
-	int  idx;
+	int idx;
 
 	temp1.ll = (uint64_t)avd_get_int(rndp->rnd_seed);
 
 	for (idx = 0; idx < 3; idx++) {
 
 #ifdef _BIG_ENDIAN
-		rndp->rnd_xi[idx] = temp1.w[3-idx];
+		rndp->rnd_xi[idx] = temp1.w[3 - idx];
 #else
 		rndp->rnd_xi[idx] = temp1.w[idx];
 #endif
@@ -258,25 +259,26 @@ randdist_alloc(void)
 void
 randdist_init(randdist_t *rndp)
 {
-	probtabent_t	*rdte_hdp, *ptep;
-	double		tablemean, tablemin = 0;
-	int		pteidx;
+	probtabent_t *rdte_hdp, *ptep;
+	double tablemean, tablemin = 0;
+	int pteidx;
 
 	/* convert parameters to doubles */
 	rndp->rnd_dbl_gamma = (double)avd_get_int(rndp->rnd_gamma) / 1000.0;
 	if (rndp->rnd_mean != NULL)
-		rndp->rnd_dbl_mean  = (double)avd_get_int(rndp->rnd_mean);
+		rndp->rnd_dbl_mean = (double)avd_get_int(rndp->rnd_mean);
 	else
 		rndp->rnd_dbl_mean = rndp->rnd_dbl_gamma;
 
 	/* de-reference min and round amounts for later use */
-	rndp->rnd_vint_min  = avd_get_int(rndp->rnd_min);
-	rndp->rnd_vint_round  = avd_get_int(rndp->rnd_round);
+	rndp->rnd_vint_min = avd_get_int(rndp->rnd_min);
+	rndp->rnd_vint_round = avd_get_int(rndp->rnd_round);
 
-	filebench_log(LOG_DEBUG_IMPL,
-	    "init random var: Mean = %6.0llf, Gamma = %6.3llf, Min = %llu",
-	    rndp->rnd_dbl_mean, rndp->rnd_dbl_gamma,
-	    (u_longlong_t)rndp->rnd_vint_min);
+	filebench_log(
+		LOG_DEBUG_IMPL,
+		"init random var: Mean = %6.0llf, Gamma = %6.3llf, Min = %llu",
+		rndp->rnd_dbl_mean, rndp->rnd_dbl_gamma,
+		(u_longlong_t)rndp->rnd_vint_min);
 
 	/* initialize distribution to apply */
 	switch (rndp->rnd_type & RAND_TYPE_MASK) {
@@ -314,8 +316,8 @@ randdist_init(randdist_t *rndp)
 	pteidx = 0;
 	tablemean = 0.0;
 	for (ptep = rdte_hdp; ptep; ptep = ptep->pte_next) {
-		double	dmin, dmax;
-		int	entcnt;
+		double dmin, dmax;
+		int entcnt;
 
 		dmax = (double)avd_get_int(ptep->pte_segmax);
 		dmin = (double)avd_get_int(ptep->pte_segmin);
@@ -329,7 +331,7 @@ randdist_init(randdist_t *rndp)
 			tablemin = dmin;
 
 		entcnt = (int)avd_get_int(ptep->pte_percent);
-		tablemean += (((dmin + dmax)/2.0) * (double)entcnt);
+		tablemean += (((dmin + dmax) / 2.0) * (double)entcnt);
 
 		/* populate the lookup table */
 
@@ -342,8 +344,7 @@ randdist_init(randdist_t *rndp)
 
 	/* check to see if probability equals 100% */
 	if (pteidx != PF_TAB_SIZE)
-		filebench_log(LOG_ERROR,
-		    "Prob table only totals %d%%", pteidx);
+		filebench_log(LOG_ERROR, "Prob table only totals %d%%", pteidx);
 
 	/* If table is not supplied with a mean value, set it to table mean */
 	if (rndp->rnd_dbl_mean == 0.0)
@@ -364,8 +365,8 @@ randdist_init(randdist_t *rndp)
 	for (pteidx = 0; pteidx < PF_TAB_SIZE; pteidx++) {
 
 		rndp->rnd_rft[pteidx].rf_base =
-		    ((rndp->rnd_rft[pteidx].rf_base - tablemin) / tablemean);
+			((rndp->rnd_rft[pteidx].rf_base - tablemin) / tablemean);
 		rndp->rnd_rft[pteidx].rf_range =
-		    (rndp->rnd_rft[pteidx].rf_range / tablemean);
+			(rndp->rnd_rft[pteidx].rf_range / tablemean);
 	}
 }

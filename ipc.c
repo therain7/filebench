@@ -65,8 +65,10 @@ ipc_mutex_lock(pthread_mutex_t *mutex)
 #ifdef HAVE_ROBUST_MUTEX
 	if (error == EOWNERDEAD) {
 		if (pthread_mutex_consistent_np(mutex) != 0) {
-			filebench_log(LOG_FATAL, "mutex make consistent "
-			    "failed: %s", strerror(error));
+			filebench_log(LOG_FATAL,
+						  "mutex make consistent "
+						  "failed: %s",
+						  strerror(error));
 			return (-1);
 		}
 		return (0);
@@ -74,8 +76,7 @@ ipc_mutex_lock(pthread_mutex_t *mutex)
 #endif /* HAVE_ROBUST_MUTEX */
 
 	if (error != 0) {
-		filebench_log(LOG_FATAL, "mutex lock failed: %s",
-		    strerror(error));
+		filebench_log(LOG_FATAL, "mutex lock failed: %s", strerror(error));
 	}
 
 	return (error);
@@ -94,8 +95,10 @@ ipc_mutex_unlock(pthread_mutex_t *mutex)
 #ifdef HAVE_ROBUST_MUTEX
 	if (error == EOWNERDEAD) {
 		if (pthread_mutex_consistent_np(mutex) != 0) {
-			filebench_log(LOG_FATAL, "mutex make consistent "
-			    "failed: %s", strerror(error));
+			filebench_log(LOG_FATAL,
+						  "mutex make consistent "
+						  "failed: %s",
+						  strerror(error));
 			return (-1);
 		}
 		return (0);
@@ -103,8 +106,7 @@ ipc_mutex_unlock(pthread_mutex_t *mutex)
 #endif /* HAVE_ROBUST_MUTEX */
 
 	if (error != 0) {
-		filebench_log(LOG_FATAL, "mutex unlock failed: %s",
-		    strerror(error));
+		filebench_log(LOG_FATAL, "mutex unlock failed: %s", strerror(error));
 	}
 
 	return (error);
@@ -120,23 +122,21 @@ ipc_mutexattr_init(int mtx_type)
 
 	mtx_attrp = &(filebench_shm->shm_mutexattr[mtx_type]);
 
-	(void) pthread_mutexattr_init(mtx_attrp);
+	(void)pthread_mutexattr_init(mtx_attrp);
 
 #ifdef HAVE_PROCSCOPE_PTHREADS
-	if (pthread_mutexattr_setpshared(mtx_attrp,
-	    PTHREAD_PROCESS_SHARED) != 0) {
+	if (pthread_mutexattr_setpshared(mtx_attrp, PTHREAD_PROCESS_SHARED) != 0) {
 		filebench_log(LOG_ERROR, "cannot set mutex attr "
-		    "PROCESS_SHARED on this platform");
-//		filebench_shutdown(1);
+								 "PROCESS_SHARED on this platform");
+		//		filebench_shutdown(1);
 	}
 #ifdef HAVE_PTHREAD_MUTEXATTR_SETPROTOCOL
 	if (mtx_type & IPC_MUTEX_PRIORITY) {
-		if (pthread_mutexattr_setprotocol(mtx_attrp,
-		    PTHREAD_PRIO_INHERIT) != 0) {
-			filebench_log(LOG_ERROR,
-			    "cannot set mutex attr "
-			    "PTHREAD_PRIO_INHERIT on this platform");
-//			filebench_shutdown(1);
+		if (pthread_mutexattr_setprotocol(mtx_attrp, PTHREAD_PRIO_INHERIT) !=
+			0) {
+			filebench_log(LOG_ERROR, "cannot set mutex attr "
+									 "PTHREAD_PRIO_INHERIT on this platform");
+			//			filebench_shutdown(1);
 		}
 	}
 #endif /* HAVE_PTHREAD_MUTEXATTR_SETPROTOCOL */
@@ -144,18 +144,17 @@ ipc_mutexattr_init(int mtx_type)
 #ifdef HAVE_ROBUST_MUTEX
 	if (mtx_type & IPC_MUTEX_ROBUST) {
 		if (pthread_mutexattr_setrobust_np(mtx_attrp,
-		    PTHREAD_MUTEX_ROBUST_NP) != 0) {
+										   PTHREAD_MUTEX_ROBUST_NP) != 0) {
 			filebench_log(LOG_ERROR,
-			    "cannot set mutex attr "
-			    "PTHREAD_MUTEX_ROBUST_NP on this platform");
+						  "cannot set mutex attr "
+						  "PTHREAD_MUTEX_ROBUST_NP on this platform");
 			filebench_shutdown(1);
 		}
-		if (pthread_mutexattr_settype(mtx_attrp,
-		    PTHREAD_MUTEX_ERRORCHECK) != 0) {
-			filebench_log(LOG_ERROR,
-			    "cannot set mutex attr "
-			    "PTHREAD_MUTEX_ERRORCHECK "
-			    "on this platform");
+		if (pthread_mutexattr_settype(mtx_attrp, PTHREAD_MUTEX_ERRORCHECK) !=
+			0) {
+			filebench_log(LOG_ERROR, "cannot set mutex attr "
+									 "PTHREAD_MUTEX_ERRORCHECK "
+									 "on this platform");
 			filebench_shutdown(1);
 		}
 	}
@@ -170,11 +169,10 @@ ipc_mutexattr_init(int mtx_type)
 pthread_mutexattr_t *
 ipc_mutexattr(int mtx_type)
 {
-	if ((mtx_type >= IPC_NUM_MUTEX_ATTRS) ||
-	    (mtx_type < IPC_MUTEX_NORMAL)) {
+	if ((mtx_type >= IPC_NUM_MUTEX_ATTRS) || (mtx_type < IPC_MUTEX_NORMAL)) {
 		filebench_log(LOG_ERROR,
-		    "ipc_mutexattr called with undefined attr selector %d",
-		    mtx_type);
+					  "ipc_mutexattr called with undefined attr selector %d",
+					  mtx_type);
 		return (&(filebench_shm->shm_mutexattr[IPC_MUTEX_NORMAL]));
 	}
 
@@ -192,17 +190,16 @@ pthread_condattr_t *
 ipc_condattr(void)
 {
 	if (condattr == NULL) {
-		if ((condattr = malloc(sizeof (pthread_condattr_t))) == NULL) {
+		if ((condattr = malloc(sizeof(pthread_condattr_t))) == NULL) {
 			filebench_log(LOG_ERROR, "cannot alloc cond attr");
 			filebench_shutdown(1);
 		}
-		(void) pthread_condattr_init(condattr);
+		(void)pthread_condattr_init(condattr);
 #ifdef HAVE_PROCSCOPE_PTHREADS
-		if (pthread_condattr_setpshared(condattr,
-		    PTHREAD_PROCESS_SHARED) != 0) {
-			filebench_log(LOG_ERROR,
-			    "cannot set cond attr PROCESS_SHARED");
-//			filebench_shutdown(1);
+		if (pthread_condattr_setpshared(condattr, PTHREAD_PROCESS_SHARED) !=
+			0) {
+			filebench_log(LOG_ERROR, "cannot set cond attr PROCESS_SHARED");
+			//			filebench_shutdown(1);
 		}
 #endif /* HAVE_PROCSCOPE_PTHREADS */
 	}
@@ -220,18 +217,16 @@ static pthread_rwlockattr_t *
 ipc_rwlockattr(void)
 {
 	if (rwlockattr == NULL) {
-		if ((rwlockattr =
-		    malloc(sizeof (pthread_rwlockattr_t))) == NULL) {
+		if ((rwlockattr = malloc(sizeof(pthread_rwlockattr_t))) == NULL) {
 			filebench_log(LOG_ERROR, "cannot alloc rwlock attr");
 			filebench_shutdown(1);
 		}
-		(void) pthread_rwlockattr_init(rwlockattr);
+		(void)pthread_rwlockattr_init(rwlockattr);
 #ifdef HAVE_PROCSCOPE_PTHREADS
-		if (pthread_rwlockattr_setpshared(rwlockattr,
-		    PTHREAD_PROCESS_SHARED) != 0) {
-			filebench_log(LOG_ERROR,
-			    "cannot set rwlock attr PROCESS_SHARED");
-//			filebench_shutdown(1);
+		if (pthread_rwlockattr_setpshared(rwlockattr, PTHREAD_PROCESS_SHARED) !=
+			0) {
+			filebench_log(LOG_ERROR, "cannot set rwlock attr PROCESS_SHARED");
+			//			filebench_shutdown(1);
 		}
 #endif /* HAVE_PROCSCOPE_PTHREADS */
 	}
@@ -251,12 +246,12 @@ ipc_seminit(void)
 	if (filebench_shm->shm_sys_semid >= 0)
 		return;
 
-	if ((sys_semid = semget(key, FILEBENCH_NSEMS, IPC_CREAT |
-	    S_IRUSR | S_IWUSR)) == -1) {
+	if ((sys_semid = semget(key, FILEBENCH_NSEMS,
+							IPC_CREAT | S_IRUSR | S_IWUSR)) == -1) {
 		filebench_log(LOG_ERROR,
-		    "could not create sysv semaphore set "
-		    "(need to increase sems?): %s",
-		    strerror(errno));
+					  "could not create sysv semaphore set "
+					  "(need to increase sems?): %s",
+					  strerror(errno));
 		filebench_shutdown(1);
 	}
 
@@ -274,7 +269,8 @@ ipc_seminit(void)
  * memory. It also uses ftok() to get a shared memory semaphore key for later
  * use in allocating shared semaphores.
  */
-void ipc_init(void)
+void
+ipc_init(void)
 {
 	int shmfd;
 	char tmpbuf[MB];
@@ -284,30 +280,35 @@ void ipc_init(void)
 #endif
 
 	shmfd = mkstemp(shmpath);
-	if (shmfd  < 0) {
-		filebench_log(LOG_FATAL, "Could not create shared memory "
-			      "file %s: %s", shmpath, strerror(errno));
+	if (shmfd < 0) {
+		filebench_log(LOG_FATAL,
+					  "Could not create shared memory "
+					  "file %s: %s",
+					  shmpath, strerror(errno));
 		exit(1);
 	}
 
 	(void)lseek(shmfd, sizeof(filebench_shm_t), SEEK_SET);
 	if (write(shmfd, tmpbuf, MB) != MB) {
 		filebench_log(LOG_FATAL,
-		    "Could not write to the shared memory "
-		    "file: %s", strerror(errno));
+					  "Could not write to the shared memory "
+					  "file: %s",
+					  strerror(errno));
 		exit(1);
 	}
 
-	if ((filebench_shm = (filebench_shm_t *)mmap(NULL,
-	    sizeof(filebench_shm_t), PROT_READ | PROT_WRITE,
-	    MAP_SHARED, shmfd, 0)) == MAP_FAILED) {
-		filebench_log(LOG_FATAL, "Could not mmap the shared "
-		"memory file: %s", strerror(errno));
+	if ((filebench_shm = (filebench_shm_t *)mmap(
+			 NULL, sizeof(filebench_shm_t), PROT_READ | PROT_WRITE, MAP_SHARED,
+			 shmfd, 0)) == MAP_FAILED) {
+		filebench_log(LOG_FATAL,
+					  "Could not mmap the shared "
+					  "memory file: %s",
+					  strerror(errno));
 		exit(1);
 	}
 
-	(void) memset(filebench_shm, 0,
-		 (char *)&filebench_shm->shm_marker - (char *)filebench_shm);
+	(void)memset(filebench_shm, 0,
+				 (char *)&filebench_shm->shm_marker - (char *)filebench_shm);
 
 	/*
 	 * First, initialize all the structures needed for the filebench_log()
@@ -322,51 +323,48 @@ void ipc_init(void)
 	ipc_mutexattr_init(IPC_MUTEX_ROBUST);
 	ipc_mutexattr_init(IPC_MUTEX_PRI_ROB);
 
-	(void) pthread_mutex_init(&filebench_shm->shm_msg_lock,
-	    ipc_mutexattr(IPC_MUTEX_NORMAL));
+	(void)pthread_mutex_init(&filebench_shm->shm_msg_lock,
+							 ipc_mutexattr(IPC_MUTEX_NORMAL));
 
 	filebench_log(LOG_INFO, "Allocated %lldMB of shared memory",
-			(sizeof(filebench_shm_t) + MB) / MB);
+				  (sizeof(filebench_shm_t) + MB) / MB);
 
 	filebench_shm->shm_rmode = FILEBENCH_MODE_TIMEOUT;
 	filebench_shm->shm_string_ptr = &filebench_shm->shm_strings[0];
 	filebench_shm->shm_ptr = (char *)filebench_shm->shm_addr;
 	filebench_shm->shm_path_ptr = &filebench_shm->shm_filesetpaths[0];
 
-	(void) pthread_mutex_init(&filebench_shm->shm_fileset_lock,
-	    ipc_mutexattr(IPC_MUTEX_NORMAL));
-	(void) pthread_mutex_init(&filebench_shm->shm_procflow_lock,
-	    ipc_mutexattr(IPC_MUTEX_NORMAL));
-	(void) pthread_mutex_init(&filebench_shm->shm_procs_running_lock,
-	    ipc_mutexattr(IPC_MUTEX_NORMAL));
-	(void) pthread_mutex_init(&filebench_shm->shm_threadflow_lock,
-	    ipc_mutexattr(IPC_MUTEX_NORMAL));
-	(void) pthread_mutex_init(&filebench_shm->shm_flowop_lock,
-	    ipc_mutexattr(IPC_MUTEX_NORMAL));
-	(void) pthread_mutex_init(&filebench_shm->shm_eventgen_lock,
-	    ipc_mutexattr(IPC_MUTEX_PRI_ROB));
-	(void) pthread_mutex_init(&filebench_shm->shm_malloc_lock,
-	    ipc_mutexattr(IPC_MUTEX_NORMAL));
-	(void) pthread_mutex_init(&filebench_shm->shm_ism_lock,
-	    ipc_mutexattr(IPC_MUTEX_NORMAL));
-	(void) ipc_mutex_lock(&filebench_shm->shm_ism_lock);
-	(void) pthread_cond_init(&filebench_shm->shm_eventgen_cv,
-	    ipc_condattr());
-	(void) pthread_rwlock_init(&filebench_shm->shm_flowop_find_lock,
-	    ipc_rwlockattr());
-	(void) pthread_rwlock_init(&filebench_shm->shm_run_lock,
-	    ipc_rwlockattr());
+	(void)pthread_mutex_init(&filebench_shm->shm_fileset_lock,
+							 ipc_mutexattr(IPC_MUTEX_NORMAL));
+	(void)pthread_mutex_init(&filebench_shm->shm_procflow_lock,
+							 ipc_mutexattr(IPC_MUTEX_NORMAL));
+	(void)pthread_mutex_init(&filebench_shm->shm_procs_running_lock,
+							 ipc_mutexattr(IPC_MUTEX_NORMAL));
+	(void)pthread_mutex_init(&filebench_shm->shm_threadflow_lock,
+							 ipc_mutexattr(IPC_MUTEX_NORMAL));
+	(void)pthread_mutex_init(&filebench_shm->shm_flowop_lock,
+							 ipc_mutexattr(IPC_MUTEX_NORMAL));
+	(void)pthread_mutex_init(&filebench_shm->shm_eventgen_lock,
+							 ipc_mutexattr(IPC_MUTEX_PRI_ROB));
+	(void)pthread_mutex_init(&filebench_shm->shm_malloc_lock,
+							 ipc_mutexattr(IPC_MUTEX_NORMAL));
+	(void)pthread_mutex_init(&filebench_shm->shm_ism_lock,
+							 ipc_mutexattr(IPC_MUTEX_NORMAL));
+	(void)ipc_mutex_lock(&filebench_shm->shm_ism_lock);
+	(void)pthread_cond_init(&filebench_shm->shm_eventgen_cv, ipc_condattr());
+	(void)pthread_rwlock_init(&filebench_shm->shm_flowop_find_lock,
+							  ipc_rwlockattr());
+	(void)pthread_rwlock_init(&filebench_shm->shm_run_lock, ipc_rwlockattr());
 
 	/* Create semaphore */
 	if ((key = ftok(shmpath, 1)) < 0) {
-		filebench_log(LOG_ERROR, "cannot create sem: %s",
-		    strerror(errno));
+		filebench_log(LOG_ERROR, "cannot create sem: %s", strerror(errno));
 		exit(1);
 	}
 
 #ifdef HAVE_SEM_RMID
 	if ((sys_semid = semget(key, 0, 0)) != -1)
-		(void) semctl(sys_semid, 0, IPC_RMID);
+		(void)semctl(sys_semid, 0, IPC_RMID);
 #endif
 
 	filebench_shm->shm_semkey = key;
@@ -383,12 +381,12 @@ ipc_fini(void)
 {
 #ifdef HAVE_SEM_RMID
 	if (filebench_shm->shm_sys_semid != -1) {
-		(void) semctl(filebench_shm->shm_sys_semid, 0, IPC_RMID);
+		(void)semctl(filebench_shm->shm_sys_semid, 0, IPC_RMID);
 		filebench_shm->shm_sys_semid = -1;
 	}
 #endif
 
-	(void) unlink(shmpath);
+	(void)unlink(shmpath);
 }
 
 /*
@@ -403,23 +401,28 @@ ipc_attach(void *shmaddr, char *shmpath)
 	int shmfd;
 
 	if ((shmfd = open(shmpath, O_RDWR)) < 0) {
-		filebench_log(LOG_FATAL, "Could not open shared memory "
-			      "file %s: %s", shmpath, strerror(errno));
+		filebench_log(LOG_FATAL,
+					  "Could not open shared memory "
+					  "file %s: %s",
+					  shmpath, strerror(errno));
 		return (-1);
 	}
 
-	if ((filebench_shm = (filebench_shm_t *)mmap(shmaddr,
-	    sizeof (filebench_shm_t), PROT_READ | PROT_WRITE,
-	    MAP_SHARED | MAP_FIXED, shmfd, 0)) == MAP_FAILED) {
-		filebench_log(LOG_FATAL, "Could not mmap the shared "
-		"memory file: %s", strerror(errno));
+	if ((filebench_shm = (filebench_shm_t *)mmap(
+			 shmaddr, sizeof(filebench_shm_t), PROT_READ | PROT_WRITE,
+			 MAP_SHARED | MAP_FIXED, shmfd, 0)) == MAP_FAILED) {
+		filebench_log(LOG_FATAL,
+					  "Could not mmap the shared "
+					  "memory file: %s",
+					  strerror(errno));
 		return (-1);
 	}
 
 	if (filebench_shm != shmaddr) {
-		filebench_log(LOG_FATAL, "Could not mmap the shared "
-		"memory file to the same location as master process: %s",
-		 strerror(errno));
+		filebench_log(LOG_FATAL,
+					  "Could not mmap the shared "
+					  "memory file to the same location as master process: %s",
+					  strerror(errno));
 		return (-1);
 	}
 
@@ -433,52 +436,44 @@ static int
 preallocated_entries(int obj_type)
 {
 	int entries;
-	
-	switch(obj_type) {
+
+	switch (obj_type) {
 	case FILEBENCH_FILESET:
-		entries = sizeof(filebench_shm->shm_fileset)
-						/ sizeof(fileset_t);
+		entries = sizeof(filebench_shm->shm_fileset) / sizeof(fileset_t);
 		break;
 	case FILEBENCH_FILESETENTRY:
-		entries = sizeof(filebench_shm->shm_filesetentry)
-						/ sizeof(filesetentry_t);
+		entries =
+			sizeof(filebench_shm->shm_filesetentry) / sizeof(filesetentry_t);
 		break;
 	case FILEBENCH_PROCFLOW:
-		entries = sizeof(filebench_shm->shm_procflow)
-						/ sizeof(procflow_t);
+		entries = sizeof(filebench_shm->shm_procflow) / sizeof(procflow_t);
 		break;
 	case FILEBENCH_THREADFLOW:
-		entries = sizeof(filebench_shm->shm_threadflow)
-						/ sizeof(threadflow_t);
+		entries = sizeof(filebench_shm->shm_threadflow) / sizeof(threadflow_t);
 		break;
 	case FILEBENCH_FLOWOP:
-		entries = sizeof(filebench_shm->shm_flowop)
-						/ sizeof(flowop_t);
+		entries = sizeof(filebench_shm->shm_flowop) / sizeof(flowop_t);
 		break;
 	case FILEBENCH_VARIABLE:
-		entries = sizeof(filebench_shm->shm_var)
-						/ sizeof(var_t);
+		entries = sizeof(filebench_shm->shm_var) / sizeof(var_t);
 		break;
 	case FILEBENCH_AVD:
-		entries = sizeof(filebench_shm->shm_avd_ptrs)
-						/ sizeof(avd_t);
+		entries = sizeof(filebench_shm->shm_avd_ptrs) / sizeof(avd_t);
 		break;
 	case FILEBENCH_RANDDIST:
-		entries = sizeof(filebench_shm->shm_randdist)
-						/ sizeof(randdist_t);
+		entries = sizeof(filebench_shm->shm_randdist) / sizeof(randdist_t);
 		break;
 	case FILEBENCH_CVAR:
-		entries = sizeof(filebench_shm->shm_cvar)
-						/ sizeof(cvar_t);
+		entries = sizeof(filebench_shm->shm_cvar) / sizeof(cvar_t);
 		break;
 	case FILEBENCH_CVAR_LIB_INFO:
-		entries = sizeof(filebench_shm->shm_cvar_lib_info)
-						/ sizeof(cvar_library_info_t);
+		entries = sizeof(filebench_shm->shm_cvar_lib_info) /
+				  sizeof(cvar_library_info_t);
 		break;
 	default:
 		entries = -1;
 		filebench_log(LOG_ERROR, "preallocated_entries: "
-						"unknown object type");
+								 "unknown object type");
 		filebench_shutdown(1);
 		break;
 	}
@@ -502,7 +497,7 @@ ipc_malloc(int obj_type)
 	int max_idx;
 	int i;
 
-	(void) ipc_mutex_lock(&filebench_shm->shm_malloc_lock);
+	(void)ipc_mutex_lock(&filebench_shm->shm_malloc_lock);
 
 	start_idx = filebench_shm->shm_lastbitmapindex[obj_type];
 	max_idx = preallocated_entries(obj_type) - 1;
@@ -519,7 +514,7 @@ ipc_malloc(int obj_type)
 
 	if (i == start_idx) {
 		filebench_log(LOG_ERROR, "Out of shared memory (%d)!", obj_type);
-		(void) ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
+		(void)ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
 		return (NULL);
 	}
 
@@ -528,68 +523,67 @@ ipc_malloc(int obj_type)
 
 	switch (obj_type) {
 	case FILEBENCH_FILESET:
-		(void) memset((char *)&filebench_shm->shm_fileset[i], 0,
-		    sizeof (fileset_t));
-		(void) ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
+		(void)memset((char *)&filebench_shm->shm_fileset[i], 0,
+					 sizeof(fileset_t));
+		(void)ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
 		return ((char *)&filebench_shm->shm_fileset[i]);
 
 	case FILEBENCH_FILESETENTRY:
-		(void) memset((char *)&filebench_shm->shm_filesetentry[i], 0,
-		    sizeof (filesetentry_t));
-		(void) ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
+		(void)memset((char *)&filebench_shm->shm_filesetentry[i], 0,
+					 sizeof(filesetentry_t));
+		(void)ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
 		return ((char *)&filebench_shm->shm_filesetentry[i]);
 
 	case FILEBENCH_PROCFLOW:
-		(void) memset((char *)&filebench_shm->shm_procflow[i], 0,
-		    sizeof (procflow_t));
-		(void) ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
+		(void)memset((char *)&filebench_shm->shm_procflow[i], 0,
+					 sizeof(procflow_t));
+		(void)ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
 		return ((char *)&filebench_shm->shm_procflow[i]);
 
 	case FILEBENCH_THREADFLOW:
-		(void) memset((char *)&filebench_shm->shm_threadflow[i], 0,
-		    sizeof (threadflow_t));
-		(void) ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
+		(void)memset((char *)&filebench_shm->shm_threadflow[i], 0,
+					 sizeof(threadflow_t));
+		(void)ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
 		return ((char *)&filebench_shm->shm_threadflow[i]);
 
 	case FILEBENCH_FLOWOP:
-		(void) memset((char *)&filebench_shm->shm_flowop[i], 0,
-		    sizeof (flowop_t));
-		(void) ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
+		(void)memset((char *)&filebench_shm->shm_flowop[i], 0,
+					 sizeof(flowop_t));
+		(void)ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
 		return ((char *)&filebench_shm->shm_flowop[i]);
 
 	case FILEBENCH_VARIABLE:
-		(void) memset((char *)&filebench_shm->shm_var[i], 0,
-		    sizeof (var_t));
-		(void) ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
+		(void)memset((char *)&filebench_shm->shm_var[i], 0, sizeof(var_t));
+		(void)ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
 		return ((char *)&filebench_shm->shm_var[i]);
 
 	case FILEBENCH_AVD:
 		filebench_shm->shm_avd_ptrs[i].avd_type = AVD_INVALID;
 		filebench_shm->shm_avd_ptrs[i].avd_val.varptr = NULL;
-		(void) ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
+		(void)ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
 		return ((char *)&filebench_shm->shm_avd_ptrs[i]);
 
 	case FILEBENCH_RANDDIST:
-		(void) memset((char *)&filebench_shm->shm_randdist[i], 0,
-		    sizeof (randdist_t));
-		(void) ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
+		(void)memset((char *)&filebench_shm->shm_randdist[i], 0,
+					 sizeof(randdist_t));
+		(void)ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
 		return ((char *)&filebench_shm->shm_randdist[i]);
 
 	case FILEBENCH_CVAR:
-		(void) memset((char *)&filebench_shm->shm_cvar[i], 0, sizeof(cvar_t));
-		(void) ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
+		(void)memset((char *)&filebench_shm->shm_cvar[i], 0, sizeof(cvar_t));
+		(void)ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
 		return ((char *)&filebench_shm->shm_cvar[i]);
 
 	case FILEBENCH_CVAR_LIB_INFO:
-		(void) memset((char *)&filebench_shm->shm_cvar_lib_info[i], 0,
-			sizeof(cvar_library_info_t));
-		(void) ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
+		(void)memset((char *)&filebench_shm->shm_cvar_lib_info[i], 0,
+					 sizeof(cvar_library_info_t));
+		(void)ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
 		return ((char *)&filebench_shm->shm_cvar_lib_info[i]);
 	}
 
 	filebench_log(LOG_ERROR, "Attempt to ipc_malloc unknown object type (%d)!",
-	    obj_type);
-	(void) ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
+				  obj_type);
+	(void)ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
 	return (NULL);
 }
 
@@ -616,47 +610,47 @@ ipc_free(int type, char *addr)
 
 	case FILEBENCH_FILESET:
 		base = (caddr_t)&filebench_shm->shm_fileset[0];
-		size = sizeof (fileset_t);
+		size = sizeof(fileset_t);
 		break;
 
 	case FILEBENCH_FILESETENTRY:
 		base = (caddr_t)&filebench_shm->shm_filesetentry[0];
-		size = sizeof (filesetentry_t);
+		size = sizeof(filesetentry_t);
 		break;
 
 	case FILEBENCH_PROCFLOW:
 		base = (caddr_t)&filebench_shm->shm_procflow[0];
-		size = sizeof (procflow_t);
+		size = sizeof(procflow_t);
 		break;
 
 	case FILEBENCH_THREADFLOW:
 		base = (caddr_t)&filebench_shm->shm_threadflow[0];
-		size = sizeof (threadflow_t);
+		size = sizeof(threadflow_t);
 		break;
 
 	case FILEBENCH_FLOWOP:
 		base = (caddr_t)&filebench_shm->shm_flowop[0];
-		size = sizeof (flowop_t);
+		size = sizeof(flowop_t);
 		break;
 
 	case FILEBENCH_VARIABLE:
 		base = (caddr_t)&filebench_shm->shm_var[0];
-		size = sizeof (var_t);
+		size = sizeof(var_t);
 		break;
 
 	case FILEBENCH_AVD:
 		base = (caddr_t)&filebench_shm->shm_avd_ptrs[0];
-		size = sizeof (avd_t);
+		size = sizeof(avd_t);
 		break;
 
 	case FILEBENCH_RANDDIST:
 		base = (caddr_t)&filebench_shm->shm_randdist[0];
-		size = sizeof (randdist_t);
+		size = sizeof(randdist_t);
 		break;
 
 	case FILEBENCH_CVAR:
 		base = (caddr_t)&filebench_shm->shm_cvar[0];
-		size = sizeof (cvar_t);
+		size = sizeof(cvar_t);
 		break;
 
 	case FILEBENCH_CVAR_LIB_INFO:
@@ -668,9 +662,9 @@ ipc_free(int type, char *addr)
 	offset = ((size_t)addr - (size_t)base);
 	item = offset / size;
 
-	(void) ipc_mutex_lock(&filebench_shm->shm_malloc_lock);
+	(void)ipc_mutex_lock(&filebench_shm->shm_malloc_lock);
 	filebench_shm->shm_bitmap[type][item] = 0;
-	(void) ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
+	(void)ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
 }
 
 /*
@@ -687,12 +681,12 @@ ipc_stralloc(const char *string)
 	filebench_shm->shm_string_ptr += strlen(string) + 1;
 
 	if ((filebench_shm->shm_string_ptr - &filebench_shm->shm_strings[0]) >
-	    FILEBENCH_STRINGMEMORY) {
+		FILEBENCH_STRINGMEMORY) {
 		filebench_log(LOG_ERROR, "Out of ipc string memory");
 		return (NULL);
 	}
 
-	(void) strncpy(allocstr, string, strlen(string));
+	(void)strncpy(allocstr, string, strlen(string));
 
 	return (allocstr);
 }
@@ -714,14 +708,13 @@ ipc_pathalloc(char *path)
 
 	filebench_shm->shm_path_ptr += strlen(path) + 1;
 
-	if ((filebench_shm->shm_path_ptr -
-	    &filebench_shm->shm_filesetpaths[0]) >
-	    FILEBENCH_FILESETPATHMEMORY) {
+	if ((filebench_shm->shm_path_ptr - &filebench_shm->shm_filesetpaths[0]) >
+		FILEBENCH_FILESETPATHMEMORY) {
 		filebench_log(LOG_ERROR, "Out of fileset path memory");
 		return (NULL);
 	}
 
-	(void) strncpy(allocpath, path, strlen(path));
+	(void)strncpy(allocpath, path, strlen(path));
 
 	return (allocpath);
 }
@@ -741,22 +734,22 @@ ipc_freepaths(void)
  * Limited functionality allocator for use by custom variables to allocate
  * state.
  */
-void
-*ipc_cvar_heapalloc(size_t size)
+void *
+ipc_cvar_heapalloc(size_t size)
 {
 	void *memory;
 
-	(void) ipc_mutex_lock(&filebench_shm->shm_malloc_lock);
+	(void)ipc_mutex_lock(&filebench_shm->shm_malloc_lock);
 
 	if ((filebench_shm->shm_cvar_heapsize + size) <= FILEBENCH_CVAR_HEAPSIZE) {
-		memory = filebench_shm->shm_cvar_heap +
-				filebench_shm->shm_cvar_heapsize;
+		memory =
+			filebench_shm->shm_cvar_heap + filebench_shm->shm_cvar_heapsize;
 
 		filebench_shm->shm_cvar_heapsize += size;
 	} else
 		memory = NULL;
 
-	(void) ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
+	(void)ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
 
 	return memory;
 }
@@ -786,7 +779,7 @@ ipc_semidalloc(void)
 		;
 	if (semid == FILEBENCH_NSEMS) {
 		filebench_log(LOG_ERROR,
-		    "Out of semaphores, increase system tunable limit");
+					  "Out of semaphores, increase system tunable limit");
 		filebench_shutdown(1);
 	}
 	filebench_shm->shm_semids[semid] = 1;
@@ -825,32 +818,33 @@ ipc_ismcreate(size_t size)
 	if (filebench_shm->shm_id != -1)
 		return (0);
 
-	filebench_log(LOG_VERBOSE,
-	    "Creating %zd bytes of ISM Shared Memory...", size);
+	filebench_log(LOG_VERBOSE, "Creating %zd bytes of ISM Shared Memory...",
+				  size);
 
-	if ((filebench_shm->shm_id =
-	    shmget(0, size, IPC_CREAT | 0666)) == -1) {
-		filebench_log(LOG_ERROR,
-		    "Failed to create %zd bytes of ISM shared memory (ret = %d)", size, errno);
+	if ((filebench_shm->shm_id = shmget(0, size, IPC_CREAT | 0666)) == -1) {
+		filebench_log(
+			LOG_ERROR,
+			"Failed to create %zd bytes of ISM shared memory (ret = %d)", size,
+			errno);
 		return (-1);
 	}
 
-	if ((filebench_shm->shm_addr = (caddr_t)shmat(filebench_shm->shm_id,
-	    0, flag)) == (void *)-1) {
+	if ((filebench_shm->shm_addr =
+			 (caddr_t)shmat(filebench_shm->shm_id, 0, flag)) == (void *)-1) {
 		filebench_log(LOG_ERROR,
-		    "Failed to attach %zd bytes of created ISM shared memory",
-		    size);
+					  "Failed to attach %zd bytes of created ISM shared memory",
+					  size);
 		return (-1);
 	}
 
 	filebench_shm->shm_ptr = (char *)filebench_shm->shm_addr;
 
 	filebench_log(LOG_VERBOSE,
-	    "Allocated %zd bytes of ISM Shared Memory... at %zx",
-	    size, filebench_shm->shm_addr);
+				  "Allocated %zd bytes of ISM Shared Memory... at %zx", size,
+				  filebench_shm->shm_addr);
 
 	/* Locked until allocated to block allocs */
-	(void) ipc_mutex_unlock(&filebench_shm->shm_ism_lock);
+	(void)ipc_mutex_unlock(&filebench_shm->shm_ism_lock);
 
 	return (0);
 }
@@ -873,7 +867,6 @@ ipc_ismattach(void)
 	int flag = 0;
 #endif /* HAVE_SHM_SHARE_MMU */
 
-
 	if (ism_attached)
 		return (0);
 
@@ -881,8 +874,7 @@ ipc_ismattach(void)
 	if (filebench_shm->shm_id == 999)
 		return (0);
 
-	if (shmat(filebench_shm->shm_id, filebench_shm->shm_addr,
-	    flag) == NULL)
+	if (shmat(filebench_shm->shm_id, filebench_shm->shm_addr, flag) == NULL)
 		return (-1);
 
 	ism_attached = 1;
@@ -903,17 +895,17 @@ ipc_ismmalloc(size_t size)
 {
 	char *allocstr;
 
-	(void) ipc_mutex_lock(&filebench_shm->shm_ism_lock);
+	(void)ipc_mutex_lock(&filebench_shm->shm_ism_lock);
 
 	/* Map in shared memory */
-	(void) ipc_ismattach();
+	(void)ipc_ismattach();
 
 	allocstr = filebench_shm->shm_ptr;
 
 	filebench_shm->shm_ptr += size;
 	filebench_shm->shm_allocated += size;
 
-	(void) ipc_mutex_unlock(&filebench_shm->shm_ism_lock);
+	(void)ipc_mutex_unlock(&filebench_shm->shm_ism_lock);
 
 	return (allocstr);
 }
@@ -930,12 +922,12 @@ ipc_ismdelete(void)
 
 	filebench_log(LOG_VERBOSE, "Deleting ISM...");
 
-	(void) ipc_mutex_lock(&filebench_shm->shm_ism_lock);
+	(void)ipc_mutex_lock(&filebench_shm->shm_ism_lock);
 #ifdef HAVE_SEM_RMID
-	(void) shmctl(filebench_shm->shm_id, IPC_RMID, 0);
+	(void)shmctl(filebench_shm->shm_id, IPC_RMID, 0);
 #endif
 	filebench_shm->shm_ptr = (char *)filebench_shm->shm_addr;
 	filebench_shm->shm_id = -1;
 	filebench_shm->shm_allocated = 0;
-	(void) ipc_mutex_unlock(&filebench_shm->shm_ism_lock);
+	(void)ipc_mutex_unlock(&filebench_shm->shm_ism_lock);
 }

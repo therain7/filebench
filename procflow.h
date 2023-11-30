@@ -24,30 +24,30 @@
  */
 
 #ifndef _FB_PROCFLOW_H
-#define	_FB_PROCFLOW_H
+#define _FB_PROCFLOW_H
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
+#pragma ident "%Z%%M%	%I%	%E% SMI"
 
 #include "filebench.h"
 
 typedef struct procflow {
-	char		pf_name[128];
-	int		pf_instance;
-	avd_t		pf_instances;
-	int		pf_running;
-	flag_t          pf_threads_defined_flag;
-	struct procflow	*pf_next;
-	pid_t		pf_pid;
-	pthread_t	pf_tid;
+	char pf_name[128];
+	int pf_instance;
+	avd_t pf_instances;
+	int pf_running;
+	flag_t pf_threads_defined_flag;
+	struct procflow *pf_next;
+	pid_t pf_pid;
+	pthread_t pf_tid;
 	struct threadflow *pf_threads;
-	int		pf_attrs;
-	avd_t		pf_nice;
+	int pf_attrs;
+	avd_t pf_nice;
 } procflow_t;
 
 procflow_t *procflow_define(char *name, avd_t instances);
 void proc_create(void);
 void procflow_shutdown(void);
-void	proc_shutdown(void);
-int	procflow_exec(char *name, int instance);
+void proc_shutdown(void);
+int procflow_exec(char *name, int instance);
 
-#endif	/* _FB_PROCFLOW_H */
+#endif /* _FB_PROCFLOW_H */

@@ -24,9 +24,8 @@
  *
  */
 
-
 #ifndef _FB_FSPLUG_H
-#define	_FB_FSPLUG_H
+#define _FB_FSPLUG_H
 
 #include "filebench.h"
 
@@ -42,8 +41,8 @@ typedef enum fb_plugin_type {
 
 /* universal file descriptor for both local and nfs file systems */
 typedef union fb_fdesc {
-	int		fd_num;		/* OS file descriptor number */
-	void		*fd_ptr;	/* Pointer to nfs information block */
+	int fd_num;	  /* OS file descriptor number */
+	void *fd_ptr; /* Pointer to nfs information block */
 } fb_fdesc_t;
 
 typedef struct aiolist aiol_t;
@@ -80,67 +79,52 @@ typedef struct fsplug_func_s {
 extern fsplug_func_t *fs_functions_vec;
 
 /* Macros for calling functions */
-#define	FB_FREEMEM(fd, sz) \
-	(*fs_functions_vec->fsp_freemem)(fd, sz)
+#define FB_FREEMEM(fd, sz) (*fs_functions_vec->fsp_freemem)(fd, sz)
 
-#define	FB_OPEN(fd, path, flags, perms) \
+#define FB_OPEN(fd, path, flags, perms)                                        \
 	(*fs_functions_vec->fsp_open)(fd, path, flags, perms)
 
-#define	FB_PREAD(fdesc, iobuf, iosize, offset) \
+#define FB_PREAD(fdesc, iobuf, iosize, offset)                                 \
 	(*fs_functions_vec->fsp_pread)(fdesc, iobuf, iosize, offset)
 
-#define	FB_READ(fdesc, iobuf, iosize) \
+#define FB_READ(fdesc, iobuf, iosize)                                          \
 	(*fs_functions_vec->fsp_read)(fdesc, iobuf, iosize)
 
-#define	FB_PWRITE(fdesc, iobuf, iosize, offset) \
+#define FB_PWRITE(fdesc, iobuf, iosize, offset)                                \
 	(*fs_functions_vec->fsp_pwrite)(fdesc, iobuf, iosize, offset)
 
-#define	FB_WRITE(fdesc, iobuf, iosize) \
+#define FB_WRITE(fdesc, iobuf, iosize)                                         \
 	(*fs_functions_vec->fsp_write)(fdesc, iobuf, iosize)
 
-#define	FB_LSEEK(fdesc, amnt, whence) \
+#define FB_LSEEK(fdesc, amnt, whence)                                          \
 	(*fs_functions_vec->fsp_lseek)(fdesc, amnt, whence)
 
-#define	FB_CLOSE(fdesc) \
-	(*fs_functions_vec->fsp_close)(fdesc)
+#define FB_CLOSE(fdesc) (*fs_functions_vec->fsp_close)(fdesc)
 
-#define	FB_UNLINK(path) \
-	(*fs_functions_vec->fsp_unlink)(path)
+#define FB_UNLINK(path) (*fs_functions_vec->fsp_unlink)(path)
 
-#define	FB_MKDIR(path, perm) \
-	(*fs_functions_vec->fsp_mkdir)(path, perm)
+#define FB_MKDIR(path, perm) (*fs_functions_vec->fsp_mkdir)(path, perm)
 
-#define	FB_RMDIR(path) \
-	(*fs_functions_vec->fsp_rmdir)(path)
+#define FB_RMDIR(path) (*fs_functions_vec->fsp_rmdir)(path)
 
-#define	FB_OPENDIR(path) \
-	(*fs_functions_vec->fsp_opendir)(path)
+#define FB_OPENDIR(path) (*fs_functions_vec->fsp_opendir)(path)
 
-#define	FB_READDIR(dir) \
-	(*fs_functions_vec->fsp_readdir)(dir)
+#define FB_READDIR(dir) (*fs_functions_vec->fsp_readdir)(dir)
 
-#define	FB_CLOSEDIR(dir) \
-	(*fs_functions_vec->fsp_closedir)(dir)
+#define FB_CLOSEDIR(dir) (*fs_functions_vec->fsp_closedir)(dir)
 
-#define	FB_FSYNC(fdesc) \
-	(*fs_functions_vec->fsp_fsync)(fdesc)
+#define FB_FSYNC(fdesc) (*fs_functions_vec->fsp_fsync)(fdesc)
 
-#define	FB_RECUR_RM(path) \
-	(*fs_functions_vec->fsp_recur_rm)(path)
+#define FB_RECUR_RM(path) (*fs_functions_vec->fsp_recur_rm)(path)
 
-#define	FB_STAT(path, statp) \
-	(*fs_functions_vec->fsp_stat)(path, statp)
+#define FB_STAT(path, statp) (*fs_functions_vec->fsp_stat)(path, statp)
 
-#define	FB_FSTAT(fdesc, statp) \
-	(*fs_functions_vec->fsp_fstat)(fdesc, statp)
+#define FB_FSTAT(fdesc, statp) (*fs_functions_vec->fsp_fstat)(fdesc, statp)
 
-#define	FB_FTRUNC(fdesc, size) \
-	(*fs_functions_vec->fsp_ftrunc)(fdesc, size)
+#define FB_FTRUNC(fdesc, size) (*fs_functions_vec->fsp_ftrunc)(fdesc, size)
 
-#define	FB_LINK(existing, new) \
-	(*fs_functions_vec->fsp_link)(existing, new)
+#define FB_LINK(existing, new) (*fs_functions_vec->fsp_link)(existing, new)
 
-#define	FB_SYMLINK(name1, name2) \
-	(*fs_functions_vec->fsp_symlink)(name1, name2)
+#define FB_SYMLINK(name1, name2) (*fs_functions_vec->fsp_symlink)(name1, name2)
 
 #endif /* _FB_FSPLUG_H */

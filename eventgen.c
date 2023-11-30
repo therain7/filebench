@@ -47,7 +47,7 @@
 #include "flowop.h"
 #include "ipc.h"
 
-#define	FB_SEC2NSEC	1000000000UL
+#define FB_SEC2NSEC 1000000000UL
 
 /*
  * The producer side of the event system.  Once eventgen_hz has been set by
@@ -76,7 +76,7 @@ eventgen_thread(void)
 		int count, rate;
 
 		if (filebench_shm->shm_eventgen_hz == NULL) {
-			(void) sleep(1);
+			(void)sleep(1);
 			continue;
 		} else {
 			rate = avd_get_int(filebench_shm->shm_eventgen_hz);
@@ -106,7 +106,7 @@ eventgen_thread(void)
 		count = (rate * delta) / FB_SEC2NSEC;
 
 		filebench_log(LOG_DEBUG_SCRIPT, "delta %lluns count %d",
-			(u_longlong_t)delta, count);
+					  (u_longlong_t)delta, count);
 
 		/* Send 'count' events */
 		(void)ipc_mutex_lock(&filebench_shm->shm_eventgen_lock);
@@ -135,10 +135,10 @@ eventgen_init(void)
 {
 	pthread_t tid;
 
-	if (pthread_create(&tid, NULL,
-	    (void *(*)(void *))eventgen_thread, 0) != 0) {
+	if (pthread_create(&tid, NULL, (void *(*)(void *))eventgen_thread, 0) !=
+		0) {
 		filebench_log(LOG_ERROR, "create timer thread failed: %s",
-		    strerror(errno));
+					  strerror(errno));
 		exit(1);
 	}
 }
@@ -152,8 +152,7 @@ eventgen_setrate(avd_t rate)
 {
 	filebench_shm->shm_eventgen_hz = rate;
 	if (rate == NULL) {
-		filebench_log(LOG_ERROR,
-		    "eventgen_setrate() called without a rate");
+		filebench_log(LOG_ERROR, "eventgen_setrate() called without a rate");
 		return;
 	}
 }

@@ -23,8 +23,8 @@
  * Use is subject to license terms.
  */
 
-#ifndef	_FB_EVENTGEN_H
-#define	_FB_EVENTGEN_H
+#ifndef _FB_EVENTGEN_H
+#define _FB_EVENTGEN_H
 
 #include "filebench.h"
 
@@ -32,4 +32,4 @@ void eventgen_init(void);
 void eventgen_setrate(avd_t rate);
 void eventgen_reset(void);
 
-#endif	/* _FB_EVENTGEN_H */
+#endif /* _FB_EVENTGEN_H */

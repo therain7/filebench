@@ -90,15 +90,14 @@ stats_snap(void)
 	double total_time_sec;
 
 	if (!globalstats) {
-		filebench_log(LOG_ERROR,
-		    "'stats snap' called before 'stats clear'");
+		filebench_log(LOG_ERROR, "'stats snap' called before 'stats clear'");
 		return;
 	}
 
 	/* don't print out if run ended in error */
 	if (filebench_shm->shm_f_abort == FILEBENCH_ABORT_ERROR) {
 		filebench_log(LOG_ERROR,
-		    "NO VALID RESULTS! Filebench run terminated prematurely");
+					  "NO VALID RESULTS! Filebench run terminated prematurely");
 		return;
 	}
 
@@ -111,20 +110,19 @@ stats_snap(void)
 	 * unchanged (it's a snapshot compared to the original
 	 * start time). */
 	orig_starttime = globalstats->fs_stime;
-	(void) memset(globalstats, 0, FLOW_TYPES * sizeof(struct flowstats));
+	(void)memset(globalstats, 0, FLOW_TYPES * sizeof(struct flowstats));
 	globalstats->fs_stime = orig_starttime;
 	globalstats->fs_etime = gethrtime();
 
-	total_time_sec = (globalstats->fs_etime -
-			globalstats->fs_stime) / SEC2NS_FLOAT;
-	filebench_log(LOG_DEBUG_SCRIPT, "Stats period = %.0f sec",
-			total_time_sec);
+	total_time_sec =
+		(globalstats->fs_etime - globalstats->fs_stime) / SEC2NS_FLOAT;
+	filebench_log(LOG_DEBUG_SCRIPT, "Stats period = %.0f sec", total_time_sec);
 
 	/* Similarly we blank the master flowop statistics */
 	flowop = filebench_shm->shm_flowoplist;
 	while (flowop) {
 		if (flowop->fo_instance == FLOW_MASTER) {
-			(void) memset(&flowop->fo_stats, 0, sizeof(struct flowstats));
+			(void)memset(&flowop->fo_stats, 0, sizeof(struct flowstats));
 			flowop->fo_stats.fs_minlat = ULLONG_MAX;
 		}
 		flowop = flowop->fo_next;
@@ -149,31 +147,29 @@ stats_snap(void)
 			/* Roll up per-flowop stats into master */
 			stats_add(&flowop_master->fo_stats, &flowop->fo_stats);
 		} else {
-			filebench_log(LOG_DEBUG_NEVER,
-			    "flowop_stats could not find %s",
-			    flowop->fo_name);
+			filebench_log(LOG_DEBUG_NEVER, "flowop_stats could not find %s",
+						  flowop->fo_name);
 		}
 
 		filebench_log(LOG_DEBUG_SCRIPT,
-		    "flowop %-20s-%4d  - %5d ops %5.1lf ops/sec %5.1lfmb/s "
-		    "%8.3fms/op",
-		    flowop->fo_name,
-		    flowop->fo_instance,
-		    flowop->fo_stats.fs_count,
-		    flowop->fo_stats.fs_count / total_time_sec,
-		    (flowop->fo_stats.fs_bytes / MB_FLOAT) / total_time_sec,
-		    flowop->fo_stats.fs_count ?
-		    flowop->fo_stats.fs_total_lat /
-		    (flowop->fo_stats.fs_count * SEC2MS_FLOAT) : 0);
+					  "flowop %-20s-%4d  - %5d ops %5.1lf ops/sec %5.1lfmb/s "
+					  "%8.3fms/op",
+					  flowop->fo_name, flowop->fo_instance,
+					  flowop->fo_stats.fs_count,
+					  flowop->fo_stats.fs_count / total_time_sec,
+					  (flowop->fo_stats.fs_bytes / MB_FLOAT) / total_time_sec,
+					  flowop->fo_stats.fs_count
+						  ? flowop->fo_stats.fs_total_lat /
+								(flowop->fo_stats.fs_count * SEC2MS_FLOAT)
+						  : 0);
 
 		flowop = flowop->fo_next;
-
 	}
 
 	flowop = filebench_shm->shm_flowoplist;
 	str = malloc(1048576);
 	*str = '\0';
-	(void) strcpy(str, "Per-Operation Breakdown\n");
+	(void)strcpy(str, "Per-Operation Breakdown\n");
 	while (flowop) {
 		char line[1024];
 		char histogram[1024];
@@ -185,33 +181,34 @@ stats_snap(void)
 			continue;
 		}
 
-		(void) snprintf(line, sizeof(line), "%-20s %dops %8.0lfops/s "
-		    "%5.1lfmb/s %8.3fms/op",
-		    flowop->fo_name,
-		    flowop->fo_stats.fs_count,
-		    flowop->fo_stats.fs_count / total_time_sec,
-		    (flowop->fo_stats.fs_bytes / MB_FLOAT) / total_time_sec,
-		    flowop->fo_stats.fs_count ?
-		    flowop->fo_stats.fs_total_lat /
-		    (flowop->fo_stats.fs_count * SEC2MS_FLOAT) : 0);
-		(void) strcat(str, line);
+		(void)snprintf(line, sizeof(line),
+					   "%-20s %dops %8.0lfops/s "
+					   "%5.1lfmb/s %8.3fms/op",
+					   flowop->fo_name, flowop->fo_stats.fs_count,
+					   flowop->fo_stats.fs_count / total_time_sec,
+					   (flowop->fo_stats.fs_bytes / MB_FLOAT) / total_time_sec,
+					   flowop->fo_stats.fs_count
+						   ? flowop->fo_stats.fs_total_lat /
+								 (flowop->fo_stats.fs_count * SEC2MS_FLOAT)
+						   : 0);
+		(void)strcat(str, line);
 
-		(void) snprintf(line, sizeof(line)," [%.3fms - %5.3fms]",
-			flowop->fo_stats.fs_minlat / SEC2MS_FLOAT,
-			flowop->fo_stats.fs_maxlat / SEC2MS_FLOAT);
-		(void) strcat(str, line);
+		(void)snprintf(line, sizeof(line), " [%.3fms - %5.3fms]",
+					   flowop->fo_stats.fs_minlat / SEC2MS_FLOAT,
+					   flowop->fo_stats.fs_maxlat / SEC2MS_FLOAT);
+		(void)strcat(str, line);
 
 		if (filebench_shm->lathist_enabled) {
-			(void) sprintf(histogram, "\t[ ");
+			(void)sprintf(histogram, "\t[ ");
 			for (i = 0; i < OSPROF_BUCKET_NUMBER; i++) {
-				(void) sprintf(hist_reading, "%lu ",
-				flowop->fo_stats.fs_distribution[i]);
-				(void) strcat(histogram, hist_reading);
+				(void)sprintf(hist_reading, "%lu ",
+							  flowop->fo_stats.fs_distribution[i]);
+				(void)strcat(histogram, hist_reading);
 			}
-			(void) strcat(histogram, "]\n");
-			(void) strcat(str, histogram);
+			(void)strcat(histogram, "]\n");
+			(void)strcat(str, histogram);
 		} else
-			(void) strcat(str, "\n");
+			(void)strcat(str, "\n");
 
 		flowop = flowop->fo_next;
 	}
@@ -222,18 +219,19 @@ stats_snap(void)
 	filebench_log(LOG_INFO, "%s", str);
 	free(str);
 
-	filebench_log(LOG_INFO,
-	    "IO Summary: %5d ops %5.3lf ops/s %0.0lf/%0.0lf rd/wr "
-	    "%5.1lfmb/s %5.3fms/op",
-	    iostat->fs_count + aiostat->fs_count,
-	    (iostat->fs_count + aiostat->fs_count) / total_time_sec,
-	    (iostat->fs_rcount + aiostat->fs_rcount) / total_time_sec,
-	    (iostat->fs_wcount + aiostat->fs_wcount) / total_time_sec,
-	    ((iostat->fs_bytes + aiostat->fs_bytes) / MB_FLOAT)
-						/ total_time_sec,
-	    (iostat->fs_count + aiostat->fs_count) ?
-	    (iostat->fs_total_lat + aiostat->fs_total_lat) /
-	    ((iostat->fs_count + aiostat->fs_count) * SEC2MS_FLOAT) : 0);
+	filebench_log(
+		LOG_INFO,
+		"IO Summary: %5d ops %5.3lf ops/s %0.0lf/%0.0lf rd/wr "
+		"%5.1lfmb/s %5.3fms/op",
+		iostat->fs_count + aiostat->fs_count,
+		(iostat->fs_count + aiostat->fs_count) / total_time_sec,
+		(iostat->fs_rcount + aiostat->fs_rcount) / total_time_sec,
+		(iostat->fs_wcount + aiostat->fs_wcount) / total_time_sec,
+		((iostat->fs_bytes + aiostat->fs_bytes) / MB_FLOAT) / total_time_sec,
+		(iostat->fs_count + aiostat->fs_count)
+			? (iostat->fs_total_lat + aiostat->fs_total_lat) /
+				  ((iostat->fs_count + aiostat->fs_count) * SEC2MS_FLOAT)
+			: 0);
 
 	filebench_shm->shm_bequiet = 0;
 }
@@ -249,20 +247,19 @@ stats_clear(void)
 	flowop_t *flowop;
 
 	if (globalstats == NULL)
-		globalstats = malloc(FLOW_TYPES * sizeof (struct flowstats));
+		globalstats = malloc(FLOW_TYPES * sizeof(struct flowstats));
 
-	(void) memset(globalstats, 0, FLOW_TYPES * sizeof (struct flowstats));
+	(void)memset(globalstats, 0, FLOW_TYPES * sizeof(struct flowstats));
 
 	flowop = filebench_shm->shm_flowoplist;
 
 	while (flowop) {
 		filebench_log(LOG_DEBUG_IMPL, "Clearing stats for %s-%d",
-		    flowop->fo_name,
-		    flowop->fo_instance);
-		(void) memset(&flowop->fo_stats, 0, sizeof (struct flowstats));
+					  flowop->fo_name, flowop->fo_instance);
+		(void)memset(&flowop->fo_stats, 0, sizeof(struct flowstats));
 		flowop = flowop->fo_next;
 	}
 
-	(void) memset(globalstats, 0, sizeof(struct flowstats));
+	(void)memset(globalstats, 0, sizeof(struct flowstats));
 	globalstats->fs_stime = gethrtime();
 }

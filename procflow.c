@@ -41,7 +41,7 @@ pid_t my_pid;
 procflow_t *my_procflow = NULL;
 
 static procflow_t *procflow_define_common(procflow_t **list, char *name,
-    procflow_t *inherit, int instance);
+										  procflow_t *inherit, int instance);
 static void procflow_sleep(procflow_t *procflow, int wait_cnt);
 
 /*
@@ -73,27 +73,23 @@ procflow_createproc(procflow_t *procflow)
 	char shmaddr[128];
 	char procname[128];
 
-	(void) snprintf(instance, sizeof (instance), "%d",
-	    procflow->pf_instance);
-	(void) snprintf(procname, sizeof (procname), "%s", procflow->pf_name);
-	(void) snprintf(shmaddr, sizeof (shmaddr), "%p", filebench_shm);
-	filebench_log(LOG_DEBUG_IMPL, "creating process %s",
-	    procflow->pf_name);
+	(void)snprintf(instance, sizeof(instance), "%d", procflow->pf_instance);
+	(void)snprintf(procname, sizeof(procname), "%s", procflow->pf_name);
+	(void)snprintf(shmaddr, sizeof(shmaddr), "%p", filebench_shm);
+	filebench_log(LOG_DEBUG_IMPL, "creating process %s", procflow->pf_name);
 
 	procflow->pf_running = 0;
 
 #ifdef HAVE_FORK1
 	if ((pid = fork1()) < 0) {
-		filebench_log(LOG_ERROR,
-		    "procflow_createproc fork failed: %s",
-		    strerror(errno));
+		filebench_log(LOG_ERROR, "procflow_createproc fork failed: %s",
+					  strerror(errno));
 		return (-1);
 	}
 #else
 	if ((pid = fork()) < 0) {
-		filebench_log(LOG_ERROR,
-		    "procflow_createproc fork failed: %s",
-		    strerror(errno));
+		filebench_log(LOG_ERROR, "procflow_createproc fork failed: %s",
+					  strerror(errno));
 		return (-1);
 	}
 #endif /* HAVE_FORK1 */
@@ -104,31 +100,25 @@ procflow_createproc(procflow_t *procflow)
 		char syscmd[1024];
 #endif
 
-		(void) sigignore(SIGINT);
-		filebench_log(LOG_DEBUG_SCRIPT,
-		    "Starting %s-%d", procflow->pf_name,
-		    procflow->pf_instance);
+		(void)sigignore(SIGINT);
+		filebench_log(LOG_DEBUG_SCRIPT, "Starting %s-%d", procflow->pf_name,
+					  procflow->pf_instance);
 		/* Child */
 
 #ifdef USE_SYSTEM
-		(void) snprintf(syscmd, sizeof (syscmd), "%s -a %s -i %s -s %s",
-		    execname,
-		    procname,
-		    instance,
-		    shmaddr);
+		(void)snprintf(syscmd, sizeof(syscmd), "%s -a %s -i %s -s %s", execname,
+					   procname, instance, shmaddr);
 		if (system(syscmd) < 0) {
-			filebench_log(LOG_ERROR,
-			    "procflow exec proc failed: %s",
-			    strerror(errno));
+			filebench_log(LOG_ERROR, "procflow exec proc failed: %s",
+						  strerror(errno));
 			filebench_shutdown(1);
 		}
 
 #else
-		if (execlp(execname, procname, "-a", procname, "-i",
-		    instance, "-s", shmaddr, "-m", shmpath, NULL) < 0) {
-			filebench_log(LOG_ERROR,
-			    "procflow exec proc failed: %s",
-			    strerror(errno));
+		if (execlp(execname, procname, "-a", procname, "-i", instance, "-s",
+				   shmaddr, "-m", shmpath, NULL) < 0) {
+			filebench_log(LOG_ERROR, "procflow exec proc failed: %s",
+						  strerror(errno));
 			filebench_shutdown(1);
 		}
 #endif
@@ -138,8 +128,7 @@ procflow_createproc(procflow_t *procflow)
 		procflow->pf_pid = pid;
 	}
 
-	filebench_log(LOG_DEBUG_IMPL, "procflow_createproc created pid %d",
-	    pid);
+	filebench_log(LOG_DEBUG_IMPL, "procflow_createproc created pid %d", pid);
 
 	return (0);
 }
@@ -163,8 +152,8 @@ procflow_create_all_procs(void)
 		int i;
 
 		instances = (int)avd_get_int(procflow->pf_instances);
-		filebench_log(LOG_INFO, "Starting %d %s instances",
-				    instances, procflow->pf_name);
+		filebench_log(LOG_INFO, "Starting %d %s instances", instances,
+					  procflow->pf_name);
 
 		/* Create instances of procflow */
 		for (i = 0; (i < instances) && (ret == 0); i++) {
@@ -172,8 +161,8 @@ procflow_create_all_procs(void)
 
 			/* Define procflows and add them to the list */
 			newproc =
-			    procflow_define_common(&filebench_shm->shm_procflowlist,
-					    procflow->pf_name, procflow, i + 1);
+				procflow_define_common(&filebench_shm->shm_procflowlist,
+									   procflow->pf_name, procflow, i + 1);
 
 			/*
 			 * We clear pf_threads_defined_flag in the procflow
@@ -197,12 +186,10 @@ procflow_create_all_procs(void)
 		procflow = procflow->pf_next;
 	}
 
-
 	/* Wait here for all monitor threads to define threadflows */
 	procflow = filebench_shm->shm_procflowlist;
 	while (procflow) {
-		if (procflow->pf_instance &&
-		    (procflow->pf_instance == FLOW_MASTER)) {
+		if (procflow->pf_instance && (procflow->pf_instance == FLOW_MASTER)) {
 			procflow = procflow->pf_next;
 			continue;
 		}
@@ -233,7 +220,7 @@ procflow_find(char *name, int instance)
 
 	while (procflow) {
 		if ((strcmp(name, procflow->pf_name) == 0) &&
-		    (instance == procflow->pf_instance)) {
+			(instance == procflow->pf_instance)) {
 			(void)ipc_mutex_unlock(&filebench_shm->shm_procflow_lock);
 			return (procflow);
 		}
@@ -267,9 +254,8 @@ procflow_exec(char *name, int instance)
 	int ret;
 
 	if ((procflow = procflow_find(name, instance)) == NULL) {
-		filebench_log(LOG_FATAL,
-		    "procflow_exec could not find %s-%d",
-		    name, instance);
+		filebench_log(LOG_FATAL, "procflow_exec could not find %s-%d", name,
+					  instance);
 		return (-1);
 	}
 
@@ -279,44 +265,40 @@ procflow_exec(char *name, int instance)
 	/* set its pid from value stored by main() */
 	procflow->pf_pid = my_pid;
 
-	filebench_log(LOG_DEBUG_IMPL,
-	    "Started up %s pid %d", procflow->pf_name, my_pid);
+	filebench_log(LOG_DEBUG_IMPL, "Started up %s pid %d", procflow->pf_name,
+				  my_pid);
 
-	filebench_log(LOG_DEBUG_IMPL,
-	    "nice = %llx", procflow->pf_nice);
+	filebench_log(LOG_DEBUG_IMPL, "nice = %llx", procflow->pf_nice);
 
 	proc_nice = avd_get_int(procflow->pf_nice);
 	if (proc_nice)
-		filebench_log(LOG_DEBUG_IMPL, "Setting pri of %s-%d to %d",
-	    			name, instance, nice(proc_nice));
+		filebench_log(LOG_DEBUG_IMPL, "Setting pri of %s-%d to %d", name,
+					  instance, nice(proc_nice));
 
 	procflow->pf_running = 1;
 
 #ifdef HAVE_SETRLIMIT
 	/* Get resource limits */
-	(void) getrlimit(RLIMIT_NOFILE, &rlp);
+	(void)getrlimit(RLIMIT_NOFILE, &rlp);
 	filebench_log(LOG_DEBUG_SCRIPT, "%d file descriptors", rlp.rlim_cur);
 #endif
 
 	if ((ret = threadflow_init(procflow)) != FILEBENCH_OK) {
 		if (ret < 0) {
-			filebench_log(LOG_ERROR,
-			    "Failed to start threads for %s pid %d",
-			    procflow->pf_name, my_pid);
+			filebench_log(LOG_ERROR, "Failed to start threads for %s pid %d",
+						  procflow->pf_name, my_pid);
 		}
 	} else {
-		filebench_log(LOG_DEBUG_IMPL,
-		    "procflow_createproc exiting...");
+		filebench_log(LOG_DEBUG_IMPL, "procflow_createproc exiting...");
 	}
 
-	(void) ipc_mutex_lock(&filebench_shm->shm_procs_running_lock);
-	filebench_shm->shm_procs_running --;
-	(void) ipc_mutex_unlock(&filebench_shm->shm_procs_running_lock);
+	(void)ipc_mutex_lock(&filebench_shm->shm_procs_running_lock);
+	filebench_shm->shm_procs_running--;
+	(void)ipc_mutex_unlock(&filebench_shm->shm_procs_running_lock);
 	procflow->pf_running = 0;
 
 	return (ret);
 }
-
 
 /*
  * A special thread from which worker (child) processes are created, and which
@@ -351,64 +333,61 @@ procflow_createnwait(void *unused)
 #endif
 			pthread_exit(0);
 
-		(void) ipc_mutex_lock(&filebench_shm->shm_procflow_lock);
+		(void)ipc_mutex_lock(&filebench_shm->shm_procflow_lock);
 		/* if normal shutdown in progress, just quit */
 		if (filebench_shm->shm_f_abort) {
-			(void) ipc_mutex_unlock(
-			    &filebench_shm->shm_procflow_lock);
+			(void)ipc_mutex_unlock(&filebench_shm->shm_procflow_lock);
 			pthread_exit(0);
 		}
 
 		/* if nothing running, exit */
 		if (filebench_shm->shm_procs_running == 0) {
 			filebench_shm->shm_f_abort = FILEBENCH_ABORT_RSRC;
-			(void) ipc_mutex_unlock(
-			    &filebench_shm->shm_procflow_lock);
+			(void)ipc_mutex_unlock(&filebench_shm->shm_procflow_lock);
 			pthread_exit(0);
 		}
-		(void) ipc_mutex_unlock(&filebench_shm->shm_procflow_lock);
+		(void)ipc_mutex_unlock(&filebench_shm->shm_procflow_lock);
 
 #ifdef HAVE_WAITID
 		if (status.si_code == CLD_EXITED) {
 			/* A process called exit(); check returned status */
 			if (status.si_status != 0) {
 				filebench_log(LOG_ERROR,
-				    "Unexpected Process termination; exiting",
-				    status.si_status);
+							  "Unexpected Process termination; exiting",
+							  status.si_status);
 				filebench_shutdown(1);
 			}
 		} else {
 			/* A process quit because of some fatal error */
 			filebench_log(LOG_ERROR,
-			    "Unexpected Process termination Code %d, Errno %d",
-			    status.si_code, status.si_errno);
+						  "Unexpected Process termination Code %d, Errno %d",
+						  status.si_code, status.si_errno);
 			filebench_shutdown(1);
 		}
-#else /* HAVE_WAITID */
+#else				/* HAVE_WAITID */
 		/* child did not exit, but got a signal, so just continue waiting */
 		if (WIFSTOPPED(status))
 			continue;
-#ifdef WIFCONTINUED /* some versions (NetBSD before version 8.0) do not support WIFCONTINUED */
-	  	if (WIFCONTINUED(status))
+#ifdef WIFCONTINUED /* some versions (NetBSD before version 8.0) do not        \
+					   support WIFCONTINUED */
+		if (WIFCONTINUED(status))
 			continue;
 #endif
 		if (WIFEXITED(status)) {
 			/* A process called exit(); check returned status */
 			if (WEXITSTATUS(status) != 0) {
 				filebench_log(LOG_ERROR,
-				    "Unexpected Process termination; exiting",
-				    WEXITSTATUS(status));
+							  "Unexpected Process termination; exiting",
+							  WEXITSTATUS(status));
 				filebench_shutdown(1);
 			}
 		} else {
 			/* A process quit because of some fatal error */
-			filebench_log(LOG_ERROR,
-			    "Unexpected Process termination Code %d",
-			    WTERMSIG(status));
+			filebench_log(LOG_ERROR, "Unexpected Process termination Code %d",
+						  WTERMSIG(status));
 			filebench_shutdown(1);
 		}
 #endif
-
 	}
 	/* NOTREACHED */
 	return (NULL);
@@ -423,7 +402,7 @@ static void
 procflow_cancel(int arg1)
 {
 	filebench_log(LOG_DEBUG_IMPL, "Process signal handler on pid %",
-	    my_procflow->pf_pid);
+				  my_procflow->pf_pid);
 
 	procflow_sleep(my_procflow, SHUTDOWN_WAIT_SECONDS);
 
@@ -444,22 +423,21 @@ procflow_init(void)
 	pthread_t tid;
 	int ret = 0;
 
- 	procflow = filebench_shm->shm_procflowlist;
+	procflow = filebench_shm->shm_procflowlist;
 
 	if (!procflow) {
 		filebench_log(LOG_ERROR, "Workload has no processes");
 		return (FILEBENCH_ERROR);
 	}
 
-	filebench_log(LOG_DEBUG_IMPL,
-	    "procflow_init %s, %llu",
-	    procflow->pf_name,
-	    (u_longlong_t)avd_get_int(procflow->pf_instances));
+	filebench_log(LOG_DEBUG_IMPL, "procflow_init %s, %llu", procflow->pf_name,
+				  (u_longlong_t)avd_get_int(procflow->pf_instances));
 
 	/*
 	 * This (main) process clears the shm_procflows_defined_flag here.
-	 * Later, procflow creator thread will set this flag only after all procflows
-	 * and threadflows are defined and put into the corresponding lists.
+	 * Later, procflow creator thread will set this flag only after all
+	 * procflows and threadflows are defined and put into the corresponding
+	 * lists.
 	 */
 	clear_flag(&filebench_shm->shm_procflows_defined_flag);
 
@@ -467,9 +445,9 @@ procflow_init(void)
 	if (ret)
 		return ret;
 
-	(void) signal(SIGUSR1, procflow_cancel);
+	(void)signal(SIGUSR1, procflow_cancel);
 
-	/* 
+	/*
 	 * Wait for the process creator thread to define
 	 * all procflows (and threadflows in turn).
 	 */
@@ -488,7 +466,7 @@ procflow_wait(pid_t pid)
 	pid_t wpid;
 	int stat;
 
-	(void) waitpid(pid, &stat, 0);
+	(void)waitpid(pid, &stat, 0);
 	while ((wpid = waitpid(getpid() * -1, &stat, WNOHANG)) > 0)
 		filebench_log(LOG_DEBUG_IMPL, "Waited for pid %d", (int)wpid);
 }
@@ -501,7 +479,7 @@ static void
 procflow_sleep(procflow_t *procflow, int wait_cnt)
 {
 	while (procflow->pf_running & wait_cnt) {
-		(void) sleep(1);
+		(void)sleep(1);
 		wait_cnt--;
 	}
 }
@@ -518,11 +496,8 @@ procflow_cleanup(procflow_t *procflow)
 {
 	procflow_t *entry;
 
-	filebench_log(LOG_DEBUG_SCRIPT,
-	    "Deleted proc: (%s-%d) pid %d",
-	    procflow->pf_name,
-	    procflow->pf_instance,
-	    procflow->pf_pid);
+	filebench_log(LOG_DEBUG_SCRIPT, "Deleted proc: (%s-%d) pid %d",
+				  procflow->pf_name, procflow->pf_instance, procflow->pf_pid);
 
 	procflow->pf_running = 0;
 
@@ -550,7 +525,6 @@ procflow_cleanup(procflow_t *procflow)
 	return (0);
 }
 
-
 /*
  * Waits till all threadflows are started, or a timeout occurs.
  * Checks through the list of procflows, waiting up to 30
@@ -569,44 +543,37 @@ procflow_allstarted()
 	int running_procs = 0;
 	int ret = 0;
 
-	(void) ipc_mutex_lock(&filebench_shm->shm_procflow_lock);
+	(void)ipc_mutex_lock(&filebench_shm->shm_procflow_lock);
 
-	(void) sleep(1);
+	(void)sleep(1);
 
 	while (procflow) {
 		int waits;
 
-		if (procflow->pf_instance &&
-		    (procflow->pf_instance == FLOW_MASTER)) {
+		if (procflow->pf_instance && (procflow->pf_instance == FLOW_MASTER)) {
 			procflow = procflow->pf_next;
 			continue;
 		}
 
 		waits = 10;
 		while (waits && procflow->pf_running == 0) {
-			(void) ipc_mutex_unlock(
-			    &filebench_shm->shm_procflow_lock);
+			(void)ipc_mutex_unlock(&filebench_shm->shm_procflow_lock);
 			if (filebench_shm->shm_f_abort == 1)
 				return (-1);
 
 			if (waits < 3)
-				filebench_log(LOG_INFO,
-				    "Waiting for process %s-%d %d",
-				    procflow->pf_name,
-				    procflow->pf_instance,
-				    procflow->pf_pid);
+				filebench_log(LOG_INFO, "Waiting for process %s-%d %d",
+							  procflow->pf_name, procflow->pf_instance,
+							  procflow->pf_pid);
 
-			(void) sleep(3);
+			(void)sleep(3);
 			waits--;
-			(void) ipc_mutex_lock(
-			    &filebench_shm->shm_procflow_lock);
+			(void)ipc_mutex_lock(&filebench_shm->shm_procflow_lock);
 		}
 
 		if (waits == 0)
-			filebench_log(LOG_INFO,
-			    "Failed to start process %s-%d",
-			    procflow->pf_name,
-			    procflow->pf_instance);
+			filebench_log(LOG_INFO, "Failed to start process %s-%d",
+						  procflow->pf_name, procflow->pf_instance);
 
 		running_procs++;
 		threadflow_allstarted(procflow->pf_pid, procflow->pf_threads);
@@ -614,16 +581,14 @@ procflow_allstarted()
 		procflow = procflow->pf_next;
 	}
 
-	(void) ipc_mutex_lock(&filebench_shm->shm_procs_running_lock);
+	(void)ipc_mutex_lock(&filebench_shm->shm_procs_running_lock);
 	filebench_shm->shm_procs_running = running_procs;
-	(void) ipc_mutex_unlock(&filebench_shm->shm_procs_running_lock);
+	(void)ipc_mutex_unlock(&filebench_shm->shm_procs_running_lock);
 
-	(void) ipc_mutex_unlock(&filebench_shm->shm_procflow_lock);
-
+	(void)ipc_mutex_unlock(&filebench_shm->shm_procflow_lock);
 
 	return (ret);
 }
-
 
 /*
  * Sets the f_abort flag and clears the running count to stop
@@ -639,18 +604,17 @@ procflow_shutdown(void)
 	procflow_t *procflow, *next_procflow;
 	int wait_cnt = SHUTDOWN_WAIT_SECONDS;
 
-	(void) ipc_mutex_lock(&filebench_shm->shm_procs_running_lock);
+	(void)ipc_mutex_lock(&filebench_shm->shm_procs_running_lock);
 	if (filebench_shm->shm_procs_running <= 0) {
 		/* No processes running, so no need to do anything */
-		(void) ipc_mutex_unlock(&filebench_shm->shm_procs_running_lock);
+		(void)ipc_mutex_unlock(&filebench_shm->shm_procs_running_lock);
 		return;
 	}
-	(void) ipc_mutex_unlock(&filebench_shm->shm_procs_running_lock);
+	(void)ipc_mutex_unlock(&filebench_shm->shm_procs_running_lock);
 
-	(void) ipc_mutex_lock(&filebench_shm->shm_procflow_lock);
+	(void)ipc_mutex_lock(&filebench_shm->shm_procflow_lock);
 	if (filebench_shm->shm_f_abort == FILEBENCH_ABORT_FINI) {
-		(void) ipc_mutex_unlock(
-		    &filebench_shm->shm_procflow_lock);
+		(void)ipc_mutex_unlock(&filebench_shm->shm_procflow_lock);
 		return;
 	}
 
@@ -659,15 +623,13 @@ procflow_shutdown(void)
 		filebench_shm->shm_f_abort = FILEBENCH_ABORT_DONE;
 
 	while (procflow) {
-		if (procflow->pf_instance &&
-		    (procflow->pf_instance == FLOW_MASTER)) {
+		if (procflow->pf_instance && (procflow->pf_instance == FLOW_MASTER)) {
 			procflow = procflow->pf_next;
 			continue;
 		}
 		filebench_log(LOG_DEBUG_IMPL, "Deleting process %s-%d %d",
-		    procflow->pf_name,
-		    procflow->pf_instance,
-		    procflow->pf_pid);
+					  procflow->pf_name, procflow->pf_instance,
+					  procflow->pf_pid);
 
 		next_procflow = procflow->pf_next;
 
@@ -681,27 +643,26 @@ procflow_shutdown(void)
 
 			pid = procflow->pf_pid;
 #ifdef HAVE_SIGSEND
-			(void) sigsend(P_PID, pid, SIGUSR1);
+			(void)sigsend(P_PID, pid, SIGUSR1);
 #else
-			(void) kill(pid, SIGUSR1);
+			(void)kill(pid, SIGUSR1);
 #endif
 			procflow_wait(pid);
 		}
-		(void) procflow_cleanup(procflow);
+		(void)procflow_cleanup(procflow);
 		procflow = next_procflow;
 		if (wait_cnt > 0)
 			wait_cnt--;
 	}
 
 	filebench_shm->shm_f_abort = FILEBENCH_ABORT_FINI;
-	(void) ipc_mutex_unlock(&filebench_shm->shm_procflow_lock);
+	(void)ipc_mutex_unlock(&filebench_shm->shm_procflow_lock);
 
 	/* indicate all processes are stopped, even if some are "stuck" */
-	(void) ipc_mutex_lock(&filebench_shm->shm_procs_running_lock);
+	(void)ipc_mutex_lock(&filebench_shm->shm_procs_running_lock);
 	filebench_shm->shm_procs_running = 0;
-	(void) ipc_mutex_unlock(&filebench_shm->shm_procs_running_lock);
+	(void)ipc_mutex_unlock(&filebench_shm->shm_procs_running_lock);
 }
-
 
 /*
  * Create an in-memory process object. Allocates a procflow
@@ -715,8 +676,8 @@ procflow_shutdown(void)
  * The calling routine must hold the filebench_shm->shm_procflow_lock.
  */
 static procflow_t *
-procflow_define_common(procflow_t **list, char *name,
-    procflow_t *inherit, int instance)
+procflow_define_common(procflow_t **list, char *name, procflow_t *inherit,
+					   int instance)
 {
 	procflow_t *procflow;
 
@@ -729,12 +690,12 @@ procflow_define_common(procflow_t **list, char *name,
 		return (NULL);
 
 	if (inherit)
-		(void) memcpy(procflow, inherit, sizeof (procflow_t));
+		(void)memcpy(procflow, inherit, sizeof(procflow_t));
 	else
-		(void) memset(procflow, 0, sizeof (procflow_t));
+		(void)memset(procflow, 0, sizeof(procflow_t));
 
 	procflow->pf_instance = instance;
-	(void) strcpy(procflow->pf_name, name);
+	(void)strcpy(procflow->pf_name, name);
 
 	filebench_log(LOG_DEBUG_IMPL, "defining process %s-%d", name, instance);
 
@@ -746,8 +707,8 @@ procflow_define_common(procflow_t **list, char *name,
 		procflow->pf_next = *list;
 		*list = procflow;
 	}
-	filebench_log(LOG_DEBUG_IMPL, "process %s-%d proclist %zx",
-	    name, instance, filebench_shm->shm_procflowlist);
+	filebench_log(LOG_DEBUG_IMPL, "process %s-%d proclist %zx", name, instance,
+				  filebench_shm->shm_procflowlist);
 
 	return (procflow);
 }
@@ -766,13 +727,13 @@ procflow_define(char *name, avd_t instances)
 {
 	procflow_t *procflow;
 
-	(void) ipc_mutex_lock(&filebench_shm->shm_procflow_lock);
+	(void)ipc_mutex_lock(&filebench_shm->shm_procflow_lock);
 
-	procflow = procflow_define_common(&filebench_shm->shm_procflowlist,
-	    name, NULL, FLOW_MASTER);
+	procflow = procflow_define_common(&filebench_shm->shm_procflowlist, name,
+									  NULL, FLOW_MASTER);
 	procflow->pf_instances = instances;
 
-	(void) ipc_mutex_unlock(&filebench_shm->shm_procflow_lock);
+	(void)ipc_mutex_unlock(&filebench_shm->shm_procflow_lock);
 
 	return (procflow);
 }
@@ -795,7 +756,7 @@ proc_create()
 	filebench_shm->shm_1st_err = 0;
 	filebench_shm->shm_f_abort = FILEBENCH_OK;
 
-	(void) pthread_rwlock_rdlock(&filebench_shm->shm_run_lock);
+	(void)pthread_rwlock_rdlock(&filebench_shm->shm_run_lock);
 
 	if (procflow_init() != 0) {
 		filebench_log(LOG_ERROR, "Failed to create processes\n");
@@ -813,13 +774,13 @@ proc_create()
 	 * processes, which will alloc memory from this shm.
 	 */
 	if (filebench_shm->shm_required &&
-	    (ipc_ismcreate(filebench_shm->shm_required) < 0)) {
+		(ipc_ismcreate(filebench_shm->shm_required) < 0)) {
 		filebench_log(LOG_ERROR, "Could not allocate shared memory");
 		return;
 	}
 
 	/* Release the read lock, allowing threads to start */
-	(void) pthread_rwlock_unlock(&filebench_shm->shm_run_lock);
+	(void)pthread_rwlock_unlock(&filebench_shm->shm_run_lock);
 
 	filebench_shm->shm_starttime = gethrtime();
 	eventgen_reset();

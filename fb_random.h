@@ -24,9 +24,9 @@
  */
 
 #ifndef _FB_RANDOM_H
-#define	_FB_RANDOM_H
+#define _FB_RANDOM_H
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
+#pragma ident "%Z%%M%	%I%	%E% SMI"
 
 #include "filebench.h"
 
@@ -35,10 +35,10 @@
  * probability table
  */
 typedef struct probtabent {
-	struct probtabent	*pte_next;
-	avd_t			pte_percent;
-	avd_t			pte_segmin;
-	avd_t			pte_segmax;
+	struct probtabent *pte_next;
+	avd_t pte_percent;
+	avd_t pte_segmin;
+	avd_t pte_segmax;
 } probtabent_t;
 
 /*
@@ -47,12 +47,12 @@ typedef struct probtabent {
  * entry in the table.
  */
 typedef struct randfunc {
-	double		rf_base;
-	double		rf_range;
+	double rf_base;
+	double rf_range;
 } randfunc_t;
 
 /* Number of entries in the probability function table */
-#define	PF_TAB_SIZE	100
+#define PF_TAB_SIZE 100
 
 /*
  * Random Distribution definition object. Includes a pointer to the
@@ -61,38 +61,38 @@ typedef struct randfunc {
  * numbers.
  */
 typedef struct randdist {
-	double		(*rnd_get)(struct randdist *);
-	double		(*rnd_src)(unsigned short *);
+	double (*rnd_get)(struct randdist *);
+	double (*rnd_src)(unsigned short *);
 	struct randdist *rnd_next;
-	avd_t		rnd_seed;
-	avd_t		rnd_mean;
-	avd_t		rnd_gamma;
-	avd_t		rnd_min;
-	avd_t		rnd_round;
-	double		rnd_dbl_mean;
-	double		rnd_dbl_gamma;
-	fbint_t		rnd_vint_min;
-	fbint_t		rnd_vint_round;
-	probtabent_t	*rnd_probtabs;
-	randfunc_t	rnd_rft[PF_TAB_SIZE];
-	uint16_t	rnd_xi[3];
-	uint16_t	rnd_type;
+	avd_t rnd_seed;
+	avd_t rnd_mean;
+	avd_t rnd_gamma;
+	avd_t rnd_min;
+	avd_t rnd_round;
+	double rnd_dbl_mean;
+	double rnd_dbl_gamma;
+	fbint_t rnd_vint_min;
+	fbint_t rnd_vint_round;
+	probtabent_t *rnd_probtabs;
+	randfunc_t rnd_rft[PF_TAB_SIZE];
+	uint16_t rnd_xi[3];
+	uint16_t rnd_type;
 } randdist_t;
 
-#define	RAND_TYPE_UNIFORM	0x1
-#define	RAND_TYPE_GAMMA		0x2
-#define	RAND_TYPE_TABLE		0x3
-#define	RAND_TYPE_MASK		0x0fff
-#define	RAND_SRC_URANDOM	0x0000
-#define	RAND_SRC_GENERATOR	0x1000
+#define RAND_TYPE_UNIFORM 0x1
+#define RAND_TYPE_GAMMA 0x2
+#define RAND_TYPE_TABLE 0x3
+#define RAND_TYPE_MASK 0x0fff
+#define RAND_SRC_URANDOM 0x0000
+#define RAND_SRC_GENERATOR 0x1000
 
-#define	RAND_PARAM_TYPE		1
-#define	RAND_PARAM_SRC		2
-#define	RAND_PARAM_SEED		3
-#define	RAND_PARAM_MIN		4
-#define	RAND_PARAM_MEAN		5
-#define	RAND_PARAM_GAMMA	6
-#define	RAND_PARAM_ROUND	7
+#define RAND_PARAM_TYPE 1
+#define RAND_PARAM_SRC 2
+#define RAND_PARAM_SEED 3
+#define RAND_PARAM_MIN 4
+#define RAND_PARAM_MEAN 5
+#define RAND_PARAM_GAMMA 6
+#define RAND_PARAM_ROUND 7
 
 /* Function declarations */
 extern void fb_random64(uint64_t *, uint64_t, uint64_t, avd_t);
@@ -101,4 +101,4 @@ extern void fb_random32(uint32_t *, uint32_t, uint32_t, avd_t);
 extern randdist_t *randdist_alloc(void);
 extern void randdist_init(randdist_t *rndp);
 
-#endif	/* _FB_RANDOM_H */
+#endif /* _FB_RANDOM_H */

@@ -13,14 +13,14 @@
 #include <sys/types.h>
 
 /* Function (symbol) names within custom variable libraries. */
-#define FB_CVAR_MODULE_INIT			"cvar_module_init"
-#define FB_CVAR_ALLOC_HANDLE		"cvar_alloc_handle"
-#define FB_CVAR_REVALIDATE_HANDLE	"cvar_revalidate_handle"
-#define FB_CVAR_NEXT_VALUE			"cvar_next_value"
-#define FB_CVAR_FREE_HANDLE			"cvar_free_handle"
-#define FB_CVAR_MODULE_EXIT			"cvar_module_exit"
-#define FB_CVAR_USAGE				"cvar_usage"
-#define FB_CVAR_VERSION				"cvar_version"
+#define FB_CVAR_MODULE_INIT "cvar_module_init"
+#define FB_CVAR_ALLOC_HANDLE "cvar_alloc_handle"
+#define FB_CVAR_REVALIDATE_HANDLE "cvar_revalidate_handle"
+#define FB_CVAR_NEXT_VALUE "cvar_next_value"
+#define FB_CVAR_FREE_HANDLE "cvar_free_handle"
+#define FB_CVAR_MODULE_EXIT "cvar_module_exit"
+#define FB_CVAR_USAGE "cvar_usage"
+#define FB_CVAR_VERSION "cvar_version"
 
 /* Information about each library supporting a custom variable. This structure
  * is rooted in the shared memory segment. */
@@ -55,7 +55,8 @@ typedef struct cvar {
 typedef struct cvar_operations {
 	int (*cvar_module_init)(void);
 	void *(*cvar_alloc_handle)(const char *cvar_parameters,
-			void *(*cvar_malloc)(size_t size), void (*cvar_free)(void *ptr));
+							   void *(*cvar_malloc)(size_t size),
+							   void (*cvar_free)(void *ptr));
 	int (*cvar_revalidate_handle)(void *cvar_handle);
 	int (*cvar_next_value)(void *cvar_handle, double *value);
 	void (*cvar_free_handle)(void *cvar_handle, void (*cvar_free)(void *ptr));
@@ -69,14 +70,14 @@ typedef struct cvar_operations {
  * between cvar_library_t and cvar_library_info_t. */
 typedef struct cvar_library {
 	cvar_library_info_t *cvar_lib_info;
-	void *lib_handle; /* The handle returned by dlopen(). */
+	void *lib_handle;		   /* The handle returned by dlopen(). */
 	cvar_operations_t cvar_op; /* The operations vector of the library. */
 } cvar_library_t;
 
 /* Points to the head of an array of pointers to cvar_library_t. */
 extern cvar_library_t **cvar_libraries;
 
-cvar_t * cvar_alloc(void);
+cvar_t *cvar_alloc(void);
 int init_cvar_library_info(const char *dirpath);
 int init_cvar_libraries();
 int init_cvar_handle(cvar_t *cvar, const char *type, const char *parameters);

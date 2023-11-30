@@ -24,44 +24,44 @@
  * Use is subject to license terms.
  */
 
-#ifndef	_FB_PARSERTYPES_H
-#define	_FB_PARSERTYPES_H
+#ifndef _FB_PARSERTYPES_H
+#define _FB_PARSERTYPES_H
 
 #include "filebench.h"
 
-#define	DOFILE_FALSE 0
-#define	DOFILE_TRUE 1
+#define DOFILE_FALSE 0
+#define DOFILE_TRUE 1
 
-#define	FSE_SYSTEM 1
+#define FSE_SYSTEM 1
 
 typedef struct list {
-	struct list	*list_next;
-	avd_t		 list_string;
-	avd_t		 list_integer;
+	struct list *list_next;
+	avd_t list_string;
+	avd_t list_integer;
 } list_t;
 
 typedef struct attr {
-	int		 attr_name;
-	struct attr	*attr_next;
-	avd_t		 attr_avd;
-	void		*attr_obj;
+	int attr_name;
+	struct attr *attr_next;
+	avd_t attr_avd;
+	void *attr_obj;
 } attr_t;
 
 typedef struct cmd {
 	void (*cmd)(struct cmd *);
-	char		*cmd_name;
-	char		*cmd_tgt1;
-	char		*cmd_tgt2;
-	char		*cmd_tgt3;
-	char		*thread_name;
-	int		cmd_subtype;
-	uint64_t	cmd_qty;
-	int64_t		cmd_qty1;
-	struct cmd	*cmd_list;
-	struct cmd	*cmd_next;
-	attr_t		*cmd_attr_list;
-	list_t		*cmd_param_list;
-	list_t		*cmd_param_list2;
+	char *cmd_name;
+	char *cmd_tgt1;
+	char *cmd_tgt2;
+	char *cmd_tgt3;
+	char *thread_name;
+	int cmd_subtype;
+	uint64_t cmd_qty;
+	int64_t cmd_qty1;
+	struct cmd *cmd_list;
+	struct cmd *cmd_next;
+	attr_t *cmd_attr_list;
+	list_t *cmd_param_list;
+	list_t *cmd_param_list2;
 } cmd_t;
 
 typedef union {
@@ -71,13 +71,13 @@ typedef union {
 } fs_u;
 
 typedef struct pidlist {
-	struct pidlist	*pl_next;
-	int		pl_fd;
-	pid_t		pl_pid;
+	struct pidlist *pl_next;
+	int pl_fd;
+	pid_t pl_pid;
 } pidlist_t;
 
 typedef void (*cmdfunc)(cmd_t *);
 int yy_switchfileparent(FILE *file);
 int yy_switchfilescript(FILE *file);
 
-#endif	/* _FB_PARSERTYPES_H */
+#endif /* _FB_PARSERTYPES_H */

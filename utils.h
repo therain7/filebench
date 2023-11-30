@@ -23,21 +23,21 @@
  * Use is subject to license terms.
  */
 
-#ifndef	_FB_UTILS_H
-#define	_FB_UTILS_H
+#ifndef _FB_UTILS_H
+#define _FB_UTILS_H
 
 #include "filebench.h"
 
 extern char *fb_stralloc(char *str);
 
 #ifdef HAVE_STRLCAT
-#define	fb_strlcat	strlcat
+#define fb_strlcat strlcat
 #else
 extern size_t fb_strlcat(char *dst, const char *src, size_t dstsize);
 #endif /* HAVE_STRLCAT */
 
 #ifdef HAVE_STRLCPY
-#define	fb_strlcpy	strlcpy
+#define fb_strlcpy strlcpy
 #else
 extern size_t fb_strlcpy(char *dst, const char *src, size_t dstsize);
 #endif /* HAVE_STRLCPY */
@@ -45,5 +45,4 @@ extern size_t fb_strlcpy(char *dst, const char *src, size_t dstsize);
 extern void fb_set_shmmax(void);
 void fb_set_rlimit(void);
 
-
-#endif	/* _FB_UTILS_H */
+#endif /* _FB_UTILS_H */

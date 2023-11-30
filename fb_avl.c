@@ -24,7 +24,6 @@
  * Use is subject to license terms.
  */
 
-
 /*
  * Generic AVL tree implementation for Filebench use.
  * Adapted from the avl.c open source code used in the Solaris kernel.
@@ -104,9 +103,8 @@
  * additional memory reference. Since the translation arrays are both very
  * small the data should remain efficiently in cache.
  */
-static const int  avl_child2balance[2]	= {-1, 1};
-static const int  avl_balance2child[]	= {0, 0, 1};
-
+static const int avl_child2balance[2] = {-1, 1};
+static const int avl_balance2child[] = {0, 0, 1};
 
 /*
  * Walk from one node to the previous valued node (ie. an infix walk
@@ -121,13 +119,12 @@ static const int  avl_balance2child[]	= {0, 0, 1};
  * otherwise next node
  */
 void *
-avl_walk(avl_tree_t *tree, void	*oldnode, int left)
+avl_walk(avl_tree_t *tree, void *oldnode, int left)
 {
 	size_t off = tree->avl_offset;
 	avl_node_t *node = AVL_DATA2NODE(oldnode, off);
 	int right = 1 - left;
 	int was_child;
-
 
 	/*
 	 * nowhere to walk to if tree is empty
@@ -142,13 +139,12 @@ avl_walk(avl_tree_t *tree, void	*oldnode, int left)
 	 * the way right.
 	 */
 	if (node->avl_child[left] != NULL) {
-		for (node = node->avl_child[left];
-		    node->avl_child[right] != NULL;
-		    node = node->avl_child[right])
+		for (node = node->avl_child[left]; node->avl_child[right] != NULL;
+			 node = node->avl_child[right])
 			;
-	/*
-	 * Otherwise, return thru left children as far as we can.
-	 */
+		/*
+		 * Otherwise, return thru left children as far as we can.
+		 */
 	} else {
 		for (;;) {
 			was_child = AVL_XCHILD(node);
@@ -220,8 +216,7 @@ avl_nearest(avl_tree_t *tree, avl_index_t where, int direction)
 
 	if (node == NULL) {
 		if (tree->avl_root != NULL)
-			filebench_log(LOG_ERROR,
-			    "Null Node Pointer Supplied");
+			filebench_log(LOG_ERROR, "Null Node Pointer Supplied");
 		return (NULL);
 	}
 	data = AVL_NODE2DATA(node, off);
@@ -230,7 +225,6 @@ avl_nearest(avl_tree_t *tree, avl_index_t where, int direction)
 
 	return (avl_walk(tree, data, direction));
 }
-
 
 /*
  * Search for the node which contains "value".  The algorithm is a
@@ -250,8 +244,7 @@ avl_find(avl_tree_t *tree, void *value, avl_index_t *where)
 	int diff;
 	size_t off = tree->avl_offset;
 
-	for (node = tree->avl_root; node != NULL;
-	    node = node->avl_child[child]) {
+	for (node = tree->avl_root; node != NULL; node = node->avl_child[child]) {
 
 		prev = node;
 
@@ -267,7 +260,6 @@ avl_find(avl_tree_t *tree, void *value, avl_index_t *where)
 			return (AVL_NODE2DATA(node, off));
 		}
 		child = avl_balance2child[1 + diff];
-
 	}
 
 	if (where != NULL)
@@ -275,7 +267,6 @@ avl_find(avl_tree_t *tree, void *value, avl_index_t *where)
 
 	return (NULL);
 }
-
 
 /*
  * Perform a rotation to restore balance at the subtree given by depth.
@@ -294,7 +285,7 @@ avl_find(avl_tree_t *tree, void *value, avl_index_t *where)
 static int
 avl_rotation(avl_tree_t *tree, avl_node_t *node, int balance)
 {
-	int left = !(balance < 0);	/* when balance = -2, left will be 0 */
+	int left = !(balance < 0); /* when balance = -2, left will be 0 */
 	int right = 1 - left;
 	int left_heavy = balance >> 1;
 	int right_heavy = -left_heavy;
@@ -456,9 +447,8 @@ avl_rotation(avl_tree_t *tree, avl_node_t *node, int balance)
 	else
 		tree->avl_root = gchild;
 
-	return (1);	/* the new tree is always shorter */
+	return (1); /* the new tree is always shorter */
 }
-
 
 /*
  * Insert a new node into an AVL tree at the specified (from avl_find()) place.
@@ -506,14 +496,12 @@ avl_insert(avl_tree_t *tree, void *new_data, avl_index_t where)
 	AVL_SETPARENT(node, parent);
 	if (parent != NULL) {
 		if (parent->avl_child[which_child] != NULL)
-			filebench_log(LOG_DEBUG_IMPL,
-			    "Overwriting existing pointer");
+			filebench_log(LOG_DEBUG_IMPL, "Overwriting existing pointer");
 
 		parent->avl_child[which_child] = node;
 	} else {
 		if (tree->avl_root != NULL)
-			filebench_log(LOG_DEBUG_IMPL,
-			    "Overwriting existing pointer");
+			filebench_log(LOG_DEBUG_IMPL, "Overwriting existing pointer");
 
 		tree->avl_root = node;
 	}
@@ -557,7 +545,7 @@ avl_insert(avl_tree_t *tree, void *new_data, avl_index_t where)
 	/*
 	 * perform a rotation to fix the tree and return
 	 */
-	(void) avl_rotation(tree, node, new_balance);
+	(void)avl_rotation(tree, node, new_balance);
 }
 
 /*
@@ -573,19 +561,14 @@ avl_insert(avl_tree_t *tree, void *new_data, avl_index_t where)
  * is correctly ordered at every step of the way in DEBUG kernels.
  */
 void
-avl_insert_here(
-	avl_tree_t *tree,
-	void *new_data,
-	void *here,
-	int direction)
+avl_insert_here(avl_tree_t *tree, void *new_data, void *here, int direction)
 {
 	avl_node_t *node;
-	int child = direction;	/* rely on AVL_BEFORE == 0, AVL_AFTER == 1 */
+	int child = direction; /* rely on AVL_BEFORE == 0, AVL_AFTER == 1 */
 
 	if ((tree == NULL) || (new_data == NULL) || (here == NULL) ||
-	    !((direction == AVL_BEFORE) || (direction == AVL_AFTER))) {
-		filebench_log(LOG_ERROR,
-		    "avl_insert_here: Bad Parameters Passed");
+		!((direction == AVL_BEFORE) || (direction == AVL_AFTER))) {
+		filebench_log(LOG_ERROR, "avl_insert_here: Bad Parameters Passed");
 		return;
 	}
 
@@ -600,7 +583,6 @@ avl_insert_here(
 		child = 1 - child;
 		while (node->avl_child[child] != NULL)
 			node = node->avl_child[child];
-
 	}
 	if (node->avl_child[child] != NULL)
 		filebench_log(LOG_DEBUG_IMPL, "Overwriting existing pointer");
@@ -620,8 +602,7 @@ avl_add(avl_tree_t *tree, void *new_node)
 	 * This is unfortunate. Give up.
 	 */
 	if (avl_find(tree, new_node, &where) != NULL) {
-		filebench_log(LOG_ERROR,
-		    "Attempting to insert already inserted node");
+		filebench_log(LOG_ERROR, "Attempting to insert already inserted node");
 		return;
 	}
 	avl_insert(tree, new_node, where);
@@ -694,9 +675,8 @@ avl_remove(avl_tree_t *tree, void *data)
 		 * get to the previous value'd node
 		 * (down 1 left, as far as possible right)
 		 */
-		for (node = delete->avl_child[left];
-		    node->avl_child[right] != NULL;
-		    node = node->avl_child[right])
+		for (node = delete->avl_child[left]; node->avl_child[right] != NULL;
+			 node = node->avl_child[right])
 			;
 
 		/*
@@ -729,14 +709,12 @@ avl_remove(avl_tree_t *tree, void *data)
 			AVL_SETPARENT(delete->avl_child[which_child], delete);
 	}
 
-
 	/*
 	 * Here we know "delete" is at least partially a leaf node. It can
 	 * be easily removed from the tree.
 	 */
 	if (tree->avl_numnodes == 0) {
-		filebench_log(LOG_ERROR,
-		    "Deleting Node from already empty tree");
+		filebench_log(LOG_ERROR, "Deleting Node from already empty tree");
 		return;
 	}
 
@@ -760,7 +738,6 @@ avl_remove(avl_tree_t *tree, void *data)
 		return;
 	}
 	parent->avl_child[which_child] = node;
-
 
 	/*
 	 * Since the subtree is now shorter, begin adjusting parent balances
@@ -804,8 +781,8 @@ avl_remove(avl_tree_t *tree, void *data)
 	} while (parent != NULL);
 }
 
-#define	AVL_REINSERT(tree, obj)		\
-	avl_remove((tree), (obj));	\
+#define AVL_REINSERT(tree, obj)                                                \
+	avl_remove((tree), (obj));                                                 \
 	avl_add((tree), (obj))
 
 boolean_t
@@ -814,9 +791,8 @@ avl_update_lt(avl_tree_t *t, void *obj)
 	void *neighbor;
 
 	if (!(((neighbor = AVL_NEXT(t, obj)) == NULL) ||
-	    (t->avl_compar(obj, neighbor) <= 0))) {
-		filebench_log(LOG_ERROR,
-		    "avl_update_lt: Neighbor miss compare");
+		  (t->avl_compar(obj, neighbor) <= 0))) {
+		filebench_log(LOG_ERROR, "avl_update_lt: Neighbor miss compare");
 		return (B_FALSE);
 	}
 
@@ -835,9 +811,8 @@ avl_update_gt(avl_tree_t *t, void *obj)
 	void *neighbor;
 
 	if (!(((neighbor = AVL_PREV(t, obj)) == NULL) ||
-	    (t->avl_compar(obj, neighbor) >= 0))) {
-		filebench_log(LOG_ERROR,
-		    "avl_update_gt: Neighbor miss compare");
+		  (t->avl_compar(obj, neighbor) >= 0))) {
+		filebench_log(LOG_ERROR, "avl_update_gt: Neighbor miss compare");
 		return (B_FALSE);
 	}
 
@@ -874,16 +849,14 @@ avl_update(avl_tree_t *t, void *obj)
  * initialize a new AVL tree
  */
 void
-avl_create(avl_tree_t *tree, int (*compar) (const void *, const void *),
-    size_t size, size_t offset)
+avl_create(avl_tree_t *tree, int (*compar)(const void *, const void *),
+		   size_t size, size_t offset)
 {
 	if ((tree == NULL) || (compar == NULL) || (size == 0) ||
-	    (size < (offset + sizeof (avl_node_t)))) {
-		filebench_log(LOG_ERROR,
-		    "avl_create: Bad Parameters Passed");
+		(size < (offset + sizeof(avl_node_t)))) {
+		filebench_log(LOG_ERROR, "avl_create: Bad Parameters Passed");
 		return;
-	}
-;
+	};
 #if defined(_LP64) || (__WORDSIZE == 64)
 	if ((offset & 0x7) != 0) {
 		filebench_log(LOG_ERROR, "Missaligned pointer to new data");
@@ -905,11 +878,9 @@ avl_create(avl_tree_t *tree, int (*compar) (const void *, const void *),
 void
 avl_destroy(avl_tree_t *tree)
 {
-	if ((tree == NULL) || (tree->avl_numnodes != 0) ||
-	    (tree->avl_root != NULL))
+	if ((tree == NULL) || (tree->avl_numnodes != 0) || (tree->avl_root != NULL))
 		filebench_log(LOG_DEBUG_IMPL, "avl_tree: Tree not destroyed");
 }
-
 
 /*
  * Return the number of nodes in an AVL tree.
@@ -934,7 +905,7 @@ avl_is_empty(avl_tree_t *tree)
 	return (tree->avl_numnodes == 0);
 }
 
-#define	CHILDBIT	(1L)
+#define CHILDBIT (1L)
 
 /*
  * Post-order tree walk used to visit all tree nodes and destroy the tree
@@ -958,11 +929,11 @@ avl_is_empty(avl_tree_t *tree)
 void *
 avl_destroy_nodes(avl_tree_t *tree, void **cookie)
 {
-	avl_node_t	*node;
-	avl_node_t	*parent;
-	int		child;
-	void		*first;
-	size_t		off = tree->avl_offset;
+	avl_node_t *node;
+	avl_node_t *parent;
+	int child;
+	void *first;
+	size_t off = tree->avl_offset;
 
 	/*
 	 * Initial calls go to the first node or it's right descendant.
@@ -990,9 +961,8 @@ avl_destroy_nodes(avl_tree_t *tree, void **cookie)
 	if (parent == NULL) {
 		if (tree->avl_root != NULL) {
 			if (tree->avl_numnodes != 1) {
-				filebench_log(LOG_DEBUG_IMPL,
-				    "avl_destroy_nodes:"
-				    " number of nodes wrong");
+				filebench_log(LOG_DEBUG_IMPL, "avl_destroy_nodes:"
+											  " number of nodes wrong");
 			}
 			tree->avl_root = NULL;
 			tree->avl_numnodes = 0;
@@ -1007,7 +977,7 @@ avl_destroy_nodes(avl_tree_t *tree, void **cookie)
 	parent->avl_child[child] = NULL;
 	if (tree->avl_numnodes <= 1)
 		filebench_log(LOG_DEBUG_IMPL,
-		    "avl_destroy_nodes: number of nodes wrong");
+					  "avl_destroy_nodes: number of nodes wrong");
 
 	--tree->avl_numnodes;
 
@@ -1037,18 +1007,17 @@ check_right_side:
 	if (node->avl_child[1] != NULL) {
 		if (AVL_XBALANCE(node) != 1)
 			filebench_log(LOG_DEBUG_IMPL,
-			    "avl_destroy_nodes: Tree inconsistency");
+						  "avl_destroy_nodes: Tree inconsistency");
 		parent = node;
 		node = node->avl_child[1];
-		if (node->avl_child[0] != NULL ||
-		    node->avl_child[1] != NULL)
+		if (node->avl_child[0] != NULL || node->avl_child[1] != NULL)
 			filebench_log(LOG_DEBUG_IMPL,
-			    "avl_destroy_nodes: Destroying non leaf node");
+						  "avl_destroy_nodes: Destroying non leaf node");
 	} else {
 
 		if (AVL_XBALANCE(node) > 0)
 			filebench_log(LOG_DEBUG_IMPL,
-			    "avl_destroy_nodes: Tree inconsistency");
+						  "avl_destroy_nodes: Tree inconsistency");
 	}
 
 done:
@@ -1056,7 +1025,7 @@ done:
 		*cookie = (void *)CHILDBIT;
 		if (node != tree->avl_root)
 			filebench_log(LOG_DEBUG_IMPL,
-			    "avl_destroy_nodes: Dangling last node");
+						  "avl_destroy_nodes: Dangling last node");
 	} else {
 		*cookie = (void *)((uintptr_t)parent | AVL_XCHILD(node));
 	}

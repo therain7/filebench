@@ -30,21 +30,21 @@ linux_disable_aslr()
 {
 	int r;
 
-	(void) personality(0xffffffff);
+	(void)personality(0xffffffff);
 	r = personality(0xffffffff | ADDR_NO_RANDOMIZE);
 	if (r == -1)
 		filebench_log(LOG_ERROR, "Could not disable ASLR");
 }
-#else /* HAVE_SYS_PERSONALITY_H && HAVE_ADDR_NO_RANDOMIZE */
+#else  /* HAVE_SYS_PERSONALITY_H && HAVE_ADDR_NO_RANDOMIZE */
 void
 other_disable_aslr()
 {
 	filebench_log(LOG_INFO, "Per-process disabling of ASLR is not "
-				"supported on this system. "
-				"For Filebench to work properly, "
-				"disable ASLR manually for the whole system. "
-				"On Linux it can be achieved by "
-				"\"sysctl  kernel.randomize_va_space=0\" command. "
-				"(the change does not persist across reboots)");
+							"supported on this system. "
+							"For Filebench to work properly, "
+							"disable ASLR manually for the whole system. "
+							"On Linux it can be achieved by "
+							"\"sysctl  kernel.randomize_va_space=0\" command. "
+							"(the change does not persist across reboots)");
 }
 #endif /* HAVE_SYS_PERSONALITY_H && HAVE_ADDR_NO_RANDOMIZE */

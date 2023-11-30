@@ -19,8 +19,7 @@ gethrtime(void)
 
 	gettimeofday(&tv, NULL);
 
-	hrt = (hrtime_t)tv.tv_sec * 1000000000UL +
-	      (hrtime_t)tv.tv_usec * 1000UL;
+	hrt = (hrtime_t)tv.tv_sec * 1000000000UL + (hrtime_t)tv.tv_usec * 1000UL;
 
 	return hrt;
 }

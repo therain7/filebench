@@ -47,7 +47,6 @@
  *
  */
 
-
 /*
  * Allocates space for a new string of the same length as
  * the supplied string "str". Copies the old string into
@@ -61,7 +60,7 @@ fb_stralloc(char *str)
 
 	if ((newstr = malloc(strlen(str) + 1)) == NULL)
 		return (NULL);
-	(void) strcpy(newstr, str);
+	(void)strcpy(newstr, str);
 	return (newstr);
 }
 
@@ -127,7 +126,6 @@ fb_strlcat(char *dst, const char *src, size_t dstsize)
 }
 #endif /* HAVE_STRLCAT */
 
-
 #ifdef HAVE_PROC_SYS_KERNEL_SHMMAX
 /*
  * Increase the maximum shared memory segment size till some large value.  We do
@@ -142,12 +140,13 @@ fb_set_shmmax(void)
 
 	f = fopen("/proc/sys/kernel/shmmax", "r+");
 	if (!f) {
-		filebench_log(LOG_FATAL, "WARNING: Could not open "
-				"/proc/sys/kernel/shmmax file!\n"
-				"It means that you probably ran Filebench not "
-				"as a root. Filebench will not increase shared\n"
-				"region limits in this case, which can lead "
-				"to the failures on certain workloads.");
+		filebench_log(LOG_FATAL,
+					  "WARNING: Could not open "
+					  "/proc/sys/kernel/shmmax file!\n"
+					  "It means that you probably ran Filebench not "
+					  "as a root. Filebench will not increase shared\n"
+					  "region limits in this case, which can lead "
+					  "to the failures on certain workloads.");
 		return;
 	}
 
@@ -156,14 +155,14 @@ fb_set_shmmax(void)
 	ret = fwrite(SOME_LARGE_SHMAX, sizeof(SOME_LARGE_SHMAX), 1, f);
 	if (ret != 1)
 		filebench_log(LOG_ERROR, "Coud not write to "
-				"/proc/sys/kernel/shmmax file!");
+								 "/proc/sys/kernel/shmmax file!");
 #undef SOME_LARGE_SHMAX
 
 	fclose(f);
 
 	return;
 }
-#else /* HAVE_PROC_SYS_KERNEL_SHMMAX */
+#else  /* HAVE_PROC_SYS_KERNEL_SHMMAX */
 void
 fb_set_shmmax(void)
 {
@@ -199,7 +198,7 @@ fb_set_rlimit(void)
 	(void)setrlimit(RLIMIT_NOFILE, &rlp);
 	return;
 }
-#else /* HAVE_SETRLIMIT */
+#else  /* HAVE_SETRLIMIT */
 void
 fb_set_rlimit(void)
 {

@@ -23,7 +23,6 @@
  * Use is subject to license terms.
  */
 
-
 #include "filebench.h"
 #include "multi_client_sync.h"
 #include <netdb.h>
@@ -31,8 +30,8 @@
 #include <arpa/inet.h>
 #include <errno.h>
 
-#define	MCS_NAMELENGTH	128
-#define	MCS_MSGLENGTH	(MCS_NAMELENGTH * 8)
+#define MCS_NAMELENGTH 128
+#define MCS_MSGLENGTH (MCS_NAMELENGTH * 8)
 
 static int mc_sync_sock_id;
 static char this_client_name[MCS_NAMELENGTH];
@@ -46,10 +45,10 @@ mc_sync_open_sock(char *master_name, int master_port, char *my_name)
 	struct sockaddr_in client_in;
 	struct sockaddr_in master_in;
 	struct hostent *master_info;
-	//int error_num;
-	//char buffer[MCS_MSGLENGTH];
+	// int error_num;
+	// char buffer[MCS_MSGLENGTH];
 
-	(void) strncpy(this_client_name, my_name, MCS_NAMELENGTH);
+	(void)strncpy(this_client_name, my_name, MCS_NAMELENGTH);
 	if ((mc_sync_sock_id = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
 		filebench_log(LOG_ERROR, "could not create a client socket");
 		return (FILEBENCH_ERROR);
@@ -60,7 +59,7 @@ mc_sync_open_sock(char *master_name, int master_port, char *my_name)
 	client_in.sin_addr.s_addr = INADDR_ANY;
 
 	if (bind(mc_sync_sock_id, (struct sockaddr *)&client_in,
-	    sizeof (client_in)) == -1) {
+			 sizeof(client_in)) == -1) {
 		filebench_log(LOG_ERROR, "could not bind to client socket");
 		return (FILEBENCH_ERROR);
 	}
@@ -69,7 +68,7 @@ mc_sync_open_sock(char *master_name, int master_port, char *my_name)
 
 	/*
 	if (gethostbyname_r(master_name, &master_info, buffer, MCS_MSGLENGTH,
-	    &error_num) == NULL) {
+		&error_num) == NULL) {
 		filebench_log(LOG_ERROR, "could not locate sync master");
 		return (FILEBENCH_ERROR);
 	}
@@ -77,13 +76,13 @@ mc_sync_open_sock(char *master_name, int master_port, char *my_name)
 
 	master_in.sin_family = AF_INET;
 	master_in.sin_port = htons((uint16_t)master_port);
-	(void) memcpy(&master_in.sin_addr.s_addr, *(master_info->h_addr_list),
-	    sizeof (master_in.sin_addr.s_addr));
+	(void)memcpy(&master_in.sin_addr.s_addr, *(master_info->h_addr_list),
+				 sizeof(master_in.sin_addr.s_addr));
 
 	if (connect(mc_sync_sock_id, (struct sockaddr *)&master_in,
-	    sizeof (master_in)) == -1) {
-		filebench_log(LOG_ERROR,
-		    "connection refused to sync master, error %d", errno);
+				sizeof(master_in)) == -1) {
+		filebench_log(LOG_ERROR, "connection refused to sync master, error %d",
+					  errno);
 		return (FILEBENCH_ERROR);
 	}
 
@@ -99,16 +98,15 @@ mc_sync_synchronize(int sync_point)
 	char msg[MCS_MSGLENGTH];
 	int amnt;
 
-	(void) snprintf(msg, MCS_MSGLENGTH,
-	    "cmd=SYNC,id=xyzzy,name=%s,sample=%d\n",
-	    this_client_name, sync_point);
-	(void) send(mc_sync_sock_id, msg, strlen(msg), 0);
+	(void)snprintf(msg, MCS_MSGLENGTH, "cmd=SYNC,id=xyzzy,name=%s,sample=%d\n",
+				   this_client_name, sync_point);
+	(void)send(mc_sync_sock_id, msg, strlen(msg), 0);
 
 	amnt = 0;
 	msg[0] = 0;
 
 	while (strchr(msg, '\n') == NULL)
-		amnt += recv(mc_sync_sock_id, msg, sizeof (msg), 0);
+		amnt += recv(mc_sync_sock_id, msg, sizeof(msg), 0);
 
 	filebench_log(LOG_INFO, "sync point %d succeeded!\n", sync_point);
 	return (FILEBENCH_OK);

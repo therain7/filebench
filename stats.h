@@ -23,8 +23,8 @@
  * Use is subject to license terms.
  */
 
-#ifndef	_FB_STATS_H
-#define	_FB_STATS_H
+#ifndef _FB_STATS_H
+#define _FB_STATS_H
 
 #include "filebench.h"
 #include "fbtime.h"
@@ -32,35 +32,35 @@
 void stats_clear(void);
 void stats_snap(void);
 
-#define OSPROF_BUCKET_NUMBER	64
+#define OSPROF_BUCKET_NUMBER 64
 
 struct flowstats {
 	/* Eight fields below are updated per each flowop and
 	 * added up in globalstats and master flowop at stats_snap() */
-	int		fs_count;	/* Number of ops */
-	uint64_t	fs_rcount;	/* Number of read ops */
-	uint64_t	fs_wcount;	/* Number of write ops */
+	int fs_count;		/* Number of ops */
+	uint64_t fs_rcount; /* Number of read ops */
+	uint64_t fs_wcount; /* Number of write ops */
 
-	uint64_t	fs_bytes;	/* Number of bytes read/written */
-	uint64_t	fs_rbytes;	/* Number of bytes read */
-	uint64_t	fs_wbytes;	/* Number of bytes written */
+	uint64_t fs_bytes;	/* Number of bytes read/written */
+	uint64_t fs_rbytes; /* Number of bytes read */
+	uint64_t fs_wbytes; /* Number of bytes written */
 
-	unsigned long	fs_distribution[OSPROF_BUCKET_NUMBER]; /* Used for OSprof */
-	hrtime_t	fs_total_lat;
-	unsigned long long fs_maxlat;	/* max flowop latency (nanoseconds) */
+	unsigned long fs_distribution[OSPROF_BUCKET_NUMBER]; /* Used for OSprof */
+	hrtime_t fs_total_lat;
+	unsigned long long fs_maxlat; /* max flowop latency (nanoseconds) */
 	unsigned long long fs_minlat; /* min flowop latency (nanoseconds) */
 
 	/* These two fields are used only in globalstats variable
 	 * to note the total time of statistics collection: from
 	 * stats_clear() to stats_snap() */
-	hrtime_t	fs_stime;
-	hrtime_t	fs_etime;
+	hrtime_t fs_stime;
+	hrtime_t fs_etime;
 };
 
-#define	IS_FLOW_IOP(x) (x->fo_stats.fs_rcount + x->fo_stats.fs_wcount)
-#define	STAT_IOPS(x)   ((x->fs_rcount) + (x->fs_wcount))
-#define	IS_FLOW_ACTIVE(x) (x->fo_stats.fs_count)
-#define	STAT_CPUTIME(x) (x->fs_cpu_op)
-#define	STAT_OHEADTIME(x) (x->fs_cpu_ohead)
+#define IS_FLOW_IOP(x) (x->fo_stats.fs_rcount + x->fo_stats.fs_wcount)
+#define STAT_IOPS(x) ((x->fs_rcount) + (x->fs_wcount))
+#define IS_FLOW_ACTIVE(x) (x->fo_stats.fs_count)
+#define STAT_CPUTIME(x) (x->fs_cpu_op)
+#define STAT_OHEADTIME(x) (x->fs_cpu_ohead)
 
-#endif	/* _FB_STATS_H */
+#endif /* _FB_STATS_H */

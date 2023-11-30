@@ -54,8 +54,7 @@ extern int lex_lineno;
  * dependent on the error level and the current error level
  * setting in filebench_shm->shm_debug_level.
  */
-void filebench_log
-__V((int level, const char *fmt, ...))
+void filebench_log __V((int level, const char *fmt, ...))
 {
 	va_list args;
 	hrtime_t now = 0;
@@ -68,27 +67,22 @@ __V((int level, const char *fmt, ...))
 	if (!filebench_shm)
 		level = LOG_FATAL;
 
-
 	if (level == LOG_FATAL)
 		goto fatal;
 
 	/* open dumpfile if not already open and writing to it */
-	if ((level == LOG_DUMP) &&
-	    (*filebench_shm->shm_dump_filename == 0))
+	if ((level == LOG_DUMP) && (*filebench_shm->shm_dump_filename == 0))
 		return;
 
-	if ((level == LOG_DUMP) &&
-	    (filebench_shm->shm_dump_fd < 0)) {
+	if ((level == LOG_DUMP) && (filebench_shm->shm_dump_fd < 0)) {
 
-		filebench_shm->shm_dump_fd =
-		    open(filebench_shm->shm_dump_filename,
-		    O_RDWR | O_CREAT | O_TRUNC, 0666);
+		filebench_shm->shm_dump_fd = open(filebench_shm->shm_dump_filename,
+										  O_RDWR | O_CREAT | O_TRUNC, 0666);
 	}
 
-	if ((level == LOG_DUMP) &&
-	    (filebench_shm->shm_dump_fd < 0)) {
-		(void) snprintf(line, sizeof (line), "Open logfile failed: %s",
-		    strerror(errno));
+	if ((level == LOG_DUMP) && (filebench_shm->shm_dump_fd < 0)) {
+		(void)snprintf(line, sizeof(line), "Open logfile failed: %s",
+					   strerror(errno));
 		level = LOG_ERROR;
 	}
 
@@ -106,8 +100,7 @@ __V((int level, const char *fmt, ...))
 	}
 
 	/* Only log greater or equal than debug setting */
-	if ((level != LOG_DUMP) &&
-	    (level > filebench_shm->shm_debug_level))
+	if ((level != LOG_DUMP) && (level > filebench_shm->shm_debug_level))
 		return;
 
 	now = gethrtime();
@@ -122,54 +115,53 @@ fatal:
 	fmt = va_arg(args, char *);
 #endif
 
-	(void) vsprintf(line, fmt, args);
+	(void)vsprintf(line, fmt, args);
 
 	va_end(args);
 
 	if (level == LOG_FATAL) {
-		(void) fprintf(stderr, "%s\n", line);
+		(void)fprintf(stderr, "%s\n", line);
 		return;
 	}
 
 	/* Serialize messages to log */
-	(void) ipc_mutex_lock(&filebench_shm->shm_msg_lock);
+	(void)ipc_mutex_lock(&filebench_shm->shm_msg_lock);
 
 	if (level == LOG_DUMP) {
 		if (filebench_shm->shm_dump_fd != -1) {
-			(void) snprintf(buf, sizeof (buf), "%s\n", line);
+			(void)snprintf(buf, sizeof(buf), "%s\n", line);
 			/* We ignore the return value of write() */
-			if (write(filebench_shm->shm_dump_fd, buf, strlen(buf)));
-			(void) fsync(filebench_shm->shm_dump_fd);
-			(void) ipc_mutex_unlock(&filebench_shm->shm_msg_lock);
+			if (write(filebench_shm->shm_dump_fd, buf, strlen(buf)))
+				;
+			(void)fsync(filebench_shm->shm_dump_fd);
+			(void)ipc_mutex_unlock(&filebench_shm->shm_msg_lock);
 			return;
 		}
 
 	} else if (filebench_shm->shm_debug_level > LOG_INFO) {
 		if (level < LOG_INFO)
-			(void) fprintf(stderr, "%5d: ", (int)my_pid);
+			(void)fprintf(stderr, "%5d: ", (int)my_pid);
 		else
-			(void) fprintf(stdout, "%5d: ", (int)my_pid);
+			(void)fprintf(stdout, "%5d: ", (int)my_pid);
 	}
 
 	if (level < LOG_INFO) {
-		(void) fprintf(stderr, "%4.3f: %s",
-		    (now - filebench_shm->shm_epoch) / SEC2NS_FLOAT,
-		    line);
+		(void)fprintf(stderr, "%4.3f: %s",
+					  (now - filebench_shm->shm_epoch) / SEC2NS_FLOAT, line);
 
 		if (my_procflow == NULL)
-			(void) fprintf(stderr, " around line %d", lex_lineno);
+			(void)fprintf(stderr, " around line %d", lex_lineno);
 
-		(void) fprintf(stderr, "\n");
-		(void) fflush(stderr);
+		(void)fprintf(stderr, "\n");
+		(void)fflush(stderr);
 	} else {
-		(void) fprintf(stdout, "%4.3f: %s",
-		    (now - filebench_shm->shm_epoch) / SEC2NS_FLOAT,
-		    line);
-		(void) fprintf(stdout, "\n");
-		(void) fflush(stdout);
+		(void)fprintf(stdout, "%4.3f: %s",
+					  (now - filebench_shm->shm_epoch) / SEC2NS_FLOAT, line);
+		(void)fprintf(stdout, "\n");
+		(void)fflush(stdout);
 	}
 
-	(void) ipc_mutex_unlock(&filebench_shm->shm_msg_lock);
+	(void)ipc_mutex_unlock(&filebench_shm->shm_msg_lock);
 }
 
 /*
@@ -178,25 +170,25 @@ fatal:
  * to stop the run. Also closes and deletes shared memory.
  */
 void
-filebench_shutdown(int error) {
+filebench_shutdown(int error)
+{
 
 	if (error) {
 		filebench_log(LOG_DEBUG_IMPL, "Shutdown on error %d", error);
-		(void) ipc_mutex_lock(&filebench_shm->shm_procflow_lock);
+		(void)ipc_mutex_lock(&filebench_shm->shm_procflow_lock);
 		if (filebench_shm->shm_f_abort == FILEBENCH_ABORT_FINI) {
-			(void) ipc_mutex_unlock(
-			    &filebench_shm->shm_procflow_lock);
+			(void)ipc_mutex_unlock(&filebench_shm->shm_procflow_lock);
 			return;
 		}
 		filebench_shm->shm_f_abort = FILEBENCH_ABORT_ERROR;
-		(void) ipc_mutex_unlock(&filebench_shm->shm_procflow_lock);
+		(void)ipc_mutex_unlock(&filebench_shm->shm_procflow_lock);
 	} else {
 		filebench_log(LOG_DEBUG_IMPL, "Shutdown");
 	}
 
 	procflow_shutdown();
 
-	(void) unlink("/tmp/filebench_shm");
+	(void)unlink("/tmp/filebench_shm");
 	ipc_ismdelete();
 	exit(error);
 }

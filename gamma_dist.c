@@ -23,7 +23,7 @@
  * Use is subject to license terms.
  */
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
+#pragma ident "%Z%%M%	%I%	%E% SMI"
 
 #include <stdlib.h>
 #include <math.h>
@@ -35,11 +35,11 @@
  */
 static double
 gamma_dist_knuth_algG(double a, double (*src)(unsigned short *),
-    unsigned short *xi)
+					  unsigned short *xi)
 {
 	double p, U, V, X, q;
 
-	p = M_E/(a + M_E);
+	p = M_E / (a + M_E);
 G2:
 	/* get a random number U */
 	U = (*src)(xi);
@@ -51,12 +51,12 @@ G2:
 	} while (V == 0);
 
 	if (U < p) {
-		X = pow(V, 1/a);
+		X = pow(V, 1 / a);
 		/* q = e^(-X) */
 		q = exp(-X);
 	} else {
 		X = 1 - log(V);
-		q = pow(X, a-1);
+		q = pow(X, a - 1);
 	}
 
 	/*
@@ -78,7 +78,7 @@ G2:
  */
 static double
 gamma_dist_knuth_algA(double a, double (*src)(unsigned short *),
-    unsigned short *xi)
+					  unsigned short *xi)
 {
 	double U, Y, X, V;
 
@@ -86,8 +86,8 @@ A1:
 	/* get a random number U */
 	U = (*src)(xi);
 
-	Y = tan(M_PI*U);
-	X = (sqrt((2*a) - 1) * Y) + a - 1;
+	Y = tan(M_PI * U);
+	X = (sqrt((2 * a) - 1) * Y) + a - 1;
 
 	if (X <= 0)
 		goto A1;
@@ -95,7 +95,8 @@ A1:
 	/* get a random number V */
 	V = (*src)(xi);
 
-	if (V > ((1 + (Y*Y)) * exp((a-1) * log(X/(a-1)) - sqrt(2*a -1) * Y)))
+	if (V >
+		((1 + (Y * Y)) * exp((a - 1) * log(X / (a - 1)) - sqrt(2 * a - 1) * Y)))
 		goto A1;
 
 	return (X);
@@ -132,8 +133,8 @@ gamma_dist_knuth(double a, double b)
  * used to optain the uniformly distributed random numbers.
  */
 double
-gamma_dist_knuth_src(double a, double b,
-    double (*src)(unsigned short *), unsigned short *xi)
+gamma_dist_knuth_src(double a, double b, double (*src)(unsigned short *),
+					 unsigned short *xi)
 {
 	if (a <= 1.0)
 		return (b * gamma_dist_knuth_algG(a, src, xi));

@@ -23,8 +23,8 @@
  * Use is subject to license terms.
  */
 
-#ifndef	_MULTI_CLIENT_SYNC_H
-#define	_MULTI_CLIENT_SYNC_H
+#ifndef _MULTI_CLIENT_SYNC_H
+#define _MULTI_CLIENT_SYNC_H
 
 #include <sys/types.h>
 #if defined(HAVE_SYS_SOCKET_H)

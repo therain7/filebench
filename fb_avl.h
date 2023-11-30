@@ -24,8 +24,8 @@
  * Use is subject to license terms.
  */
 
-#ifndef	_FB_AVL_H
-#define	_FB_AVL_H
+#ifndef _FB_AVL_H
+#define _FB_AVL_H
 
 #include "filebench.h"
 
@@ -76,18 +76,18 @@
 struct avl_node {
 	struct avl_node *avl_child[2];	/* left/right children */
 	struct avl_node *avl_parent;	/* this node's parent */
-	unsigned short avl_child_index;	/* my index in parent's avl_child[] */
-	short avl_balance;		/* balance value: -1, 0, +1 */
+	unsigned short avl_child_index; /* my index in parent's avl_child[] */
+	short avl_balance;				/* balance value: -1, 0, +1 */
 };
 
-#define	AVL_XPARENT(n)		((n)->avl_parent)
-#define	AVL_SETPARENT(n, p)	((n)->avl_parent = (p))
+#define AVL_XPARENT(n) ((n)->avl_parent)
+#define AVL_SETPARENT(n, p) ((n)->avl_parent = (p))
 
-#define	AVL_XCHILD(n)		((n)->avl_child_index)
-#define	AVL_SETCHILD(n, c)	((n)->avl_child_index = (unsigned short)(c))
+#define AVL_XCHILD(n) ((n)->avl_child_index)
+#define AVL_SETCHILD(n, c) ((n)->avl_child_index = (unsigned short)(c))
 
-#define	AVL_XBALANCE(n)		((n)->avl_balance)
-#define	AVL_SETBALANCE(n, b)	((n)->avl_balance = (short)(b))
+#define AVL_XBALANCE(n) ((n)->avl_balance)
+#define AVL_SETBALANCE(n, b) ((n)->avl_balance = (short)(b))
 
 #else /* !defined(_LP64) && !(__WORDSIZE == 64) */
 
@@ -103,8 +103,8 @@ struct avl_node {
  *
  */
 struct avl_node {
-	struct avl_node *avl_child[2];	/* left/right children nodes */
-	uintptr_t avl_pcb;		/* parent, child_index, balance */
+	struct avl_node *avl_child[2]; /* left/right children nodes */
+	uintptr_t avl_pcb;			   /* parent, child_index, balance */
 };
 
 /*
@@ -112,15 +112,15 @@ struct avl_node {
  *
  * pointer to the parent of the current node is the high order bits
  */
-#define	AVL_XPARENT(n)		((struct avl_node *)((n)->avl_pcb & ~7))
-#define	AVL_SETPARENT(n, p)						\
+#define AVL_XPARENT(n) ((struct avl_node *)((n)->avl_pcb & ~7))
+#define AVL_SETPARENT(n, p)                                                    \
 	((n)->avl_pcb = (((n)->avl_pcb & 7) | (uintptr_t)(p)))
 
 /*
  * index of this node in its parent's avl_child[]: bit #2
  */
-#define	AVL_XCHILD(n)		(((n)->avl_pcb >> 2) & 1)
-#define	AVL_SETCHILD(n, c)						\
+#define AVL_XCHILD(n) (((n)->avl_pcb >> 2) & 1)
+#define AVL_SETCHILD(n, c)                                                     \
 	((n)->avl_pcb = (uintptr_t)(((n)->avl_pcb & ~4) | ((c) << 2)))
 
 /*
@@ -128,8 +128,8 @@ struct avl_node {
  * -1, 0, or +1, and is encoded by adding 1 to the value to get the
  * unsigned values of 0, 1, 2.
  */
-#define	AVL_XBALANCE(n)		((int)(((n)->avl_pcb & 3) - 1))
-#define	AVL_SETBALANCE(n, b)						\
+#define AVL_XBALANCE(n) ((int)(((n)->avl_pcb & 3) - 1))
+#define AVL_SETBALANCE(n, b)                                                   \
 	((n)->avl_pcb = (uintptr_t)((((n)->avl_pcb & ~3) | ((b) + 1))))
 
 #endif /* !defined(_LP64) && !(__WORDSIZE == 64) */
@@ -138,17 +138,15 @@ struct avl_node {
  * switch between a node and data pointer for a given tree
  * the value of "o" is tree->avl_offset
  */
-#define	AVL_NODE2DATA(n, o)	((void *)((uintptr_t)(n) - (o)))
-#define	AVL_DATA2NODE(d, o)	((struct avl_node *)((uintptr_t)(d) + (o)))
-
+#define AVL_NODE2DATA(n, o) ((void *)((uintptr_t)(n) - (o)))
+#define AVL_DATA2NODE(d, o) ((struct avl_node *)((uintptr_t)(d) + (o)))
 
 /*
  * macros used to create/access an avl_index_t
  */
-#define	AVL_INDEX2NODE(x)	((avl_node_t *)((x) & ~1))
-#define	AVL_INDEX2CHILD(x)	((x) & 1)
-#define	AVL_MKINDEX(n, c)	((avl_index_t)(n) | (c))
-
+#define AVL_INDEX2NODE(x) ((avl_node_t *)((x) & ~1))
+#define AVL_INDEX2CHILD(x) ((x) & 1)
+#define AVL_MKINDEX(n, c) ((avl_index_t)(n) | (c))
 
 /*
  * The tree structure. The fields avl_root, avl_compar, and avl_offset come
@@ -156,19 +154,17 @@ struct avl_node {
  * a single 64 byte cache line to make avl_find() as fast as possible.
  */
 struct avl_tree {
-	struct avl_node *avl_root;	/* root node in tree */
+	struct avl_node *avl_root; /* root node in tree */
 	int (*avl_compar)(const void *, const void *);
-	size_t avl_offset;		/* offsetof(type, avl_link_t field) */
-	unsigned long avl_numnodes;	/* number of nodes in the tree */
-	size_t avl_size;		/* sizeof user type struct */
+	size_t avl_offset;			/* offsetof(type, avl_link_t field) */
+	unsigned long avl_numnodes; /* number of nodes in the tree */
+	size_t avl_size;			/* sizeof user type struct */
 };
-
 
 /*
  * This will only by used via AVL_NEXT() or AVL_PREV()
  */
 extern void *avl_walk(struct avl_tree *, void *, int);
-
 
 /*
  * The data structure nodes are anchored at an "avl_tree_t" (the equivalent
@@ -209,7 +205,6 @@ extern void *avl_walk(struct avl_tree *, void *, int);
  * as is needed for any linked list implementation.
  */
 
-
 /*
  * Type used for the root of the AVL tree.
  */
@@ -226,13 +221,11 @@ typedef struct avl_node avl_node_t;
  */
 typedef uintptr_t avl_index_t;
 
-
 /*
  * Direction constants used for avl_nearest().
  */
-#define	AVL_BEFORE	(0)
-#define	AVL_AFTER	(1)
-
+#define AVL_BEFORE (0)
+#define AVL_AFTER (1)
 
 /*
  * Prototypes
@@ -258,8 +251,8 @@ typedef uintptr_t avl_index_t;
  * offset - the value of OFFSETOF(struct my_type, my_link)
  */
 extern void avl_create(avl_tree_t *tree,
-	int (*compar) (const void *, const void *), size_t size, size_t offset);
-
+					   int (*compar)(const void *, const void *), size_t size,
+					   size_t offset);
 
 /*
  * Find a node with a matching value in the tree. Returns the matching node
@@ -291,8 +284,7 @@ extern void avl_insert(avl_tree_t *tree, void *node, avl_index_t where);
  * direction	- either AVL_AFTER or AVL_BEFORE the data "here".
  */
 extern void avl_insert_here(avl_tree_t *tree, void *new_data, void *here,
-    int direction);
-
+							int direction);
 
 /*
  * Return the first or last valued node in the tree. Will return NULL
@@ -302,7 +294,6 @@ extern void avl_insert_here(avl_tree_t *tree, void *new_data, void *here,
 extern void *avl_first(avl_tree_t *tree);
 extern void *avl_last(avl_tree_t *tree);
 
-
 /*
  * Return the next or previous valued node in the tree.
  * AVL_NEXT() will return NULL if at the last node.
@@ -310,9 +301,8 @@ extern void *avl_last(avl_tree_t *tree);
  *
  * node   - the node from which the next or previous node is found
  */
-#define	AVL_NEXT(tree, node)	avl_walk(tree, node, AVL_AFTER)
-#define	AVL_PREV(tree, node)	avl_walk(tree, node, AVL_BEFORE)
-
+#define AVL_NEXT(tree, node) avl_walk(tree, node, AVL_AFTER)
+#define AVL_PREV(tree, node) avl_walk(tree, node, AVL_BEFORE)
 
 /*
  * Find the node with the nearest value either greater or less than
@@ -338,7 +328,6 @@ extern void *avl_last(avl_tree_t *tree);
  */
 extern void *avl_nearest(avl_tree_t *tree, avl_index_t where, int direction);
 
-
 /*
  * Add a single node to the tree.
  * The node must not be in the tree, and it must not
@@ -347,7 +336,6 @@ extern void *avl_nearest(avl_tree_t *tree, avl_index_t where, int direction);
  * node   - the node to add
  */
 extern void avl_add(avl_tree_t *tree, void *node);
-
 
 /*
  * Remove a single node from the tree.  The node must be in the tree.
@@ -400,7 +388,6 @@ extern boolean_t avl_is_empty(avl_tree_t *tree);
  */
 extern void *avl_destroy_nodes(avl_tree_t *tree, void **cookie);
 
-
 /*
  * Final destroy of an AVL tree. Arguments are:
  *
@@ -408,4 +395,4 @@ extern void *avl_destroy_nodes(avl_tree_t *tree, void **cookie);
  */
 extern void avl_destroy(avl_tree_t *tree);
 
-#endif	/* _FB_AVL_H */
+#endif /* _FB_AVL_H */

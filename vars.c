@@ -50,7 +50,7 @@
  * either a boolean, an integer, a double, a string or pointer to an associated
  * random distribution object. Both avd_t and var_t entities are allocated from
  * interprocess shared memory space.
- * 
+ *
  * The attribute descriptors implement delayed binding to variable values,
  * which is necessary because the values of variables may be changed between
  * the time the workload model is loaded and the time it actually runs by
@@ -61,7 +61,7 @@
  *
  * For random variables, they actually point to the random distribution object,
  * allowing Filebench to invoke the appropriate random distribution function on
- * each access to the attribute. 
+ * each access to the attribute.
  *
  * The routines in this module are used to allocate, locate, and manipulate the
  * attribute descriptors and vars. Routines are also included to convert
@@ -103,7 +103,8 @@ avd_get_type_textified(avd_t avd)
 }
 
 static void
-set_avd_type_by_var(avd_t avd, var_t *var, int error_on_unknown) {
+set_avd_type_by_var(avd_t avd, var_t *var, int error_on_unknown)
+{
 	switch (var->var_type) {
 	case VAR_BOOL:
 		avd->avd_type = AVD_VARVAL_BOOL;
@@ -131,16 +132,16 @@ set_avd_type_by_var(avd_t avd, var_t *var, int error_on_unknown) {
 		break;
 	case VAR_UNKNOWN:
 		if (error_on_unknown) {
-			filebench_log(LOG_ERROR,
-				"Noninitialized variable %s", var->var_name);
+			filebench_log(LOG_ERROR, "Noninitialized variable %s",
+						  var->var_name);
 			filebench_shutdown(1);
 		}
 		avd->avd_type = AVD_VARVAL_UNKNOWN;
 		avd->avd_val.varptr = var;
 		break;
 	default:
-		filebench_log(LOG_ERROR,
-			"Invalid variable type (variable: %s)", var->var_name);
+		filebench_log(LOG_ERROR, "Invalid variable type (variable: %s)",
+					  var->var_name);
 		filebench_shutdown(1);
 	}
 }
@@ -181,9 +182,8 @@ avd_get_bool(avd_t avd)
 		set_avd_type_by_var(avd, var, 1);
 		return avd_get_bool(avd);
 	default:
-		filebench_log(LOG_ERROR,
-			"Attempt to get boolean from %s avd",
-			avd_get_type_textified(avd));
+		filebench_log(LOG_ERROR, "Attempt to get boolean from %s avd",
+					  avd_get_type_textified(avd));
 		return FALSE;
 	}
 }
@@ -207,7 +207,7 @@ avd_get_int(avd_t avd)
 		return (uint64_t)avd->avd_val.dblval;
 	case AVD_VARVAL_DBL:
 		assert(avd->avd_val.dblptr);
-		return (uint64_t)*(avd->avd_val.dblptr);
+		return (uint64_t) * (avd->avd_val.dblptr);
 	case AVD_VARVAL_RANDOM:
 		rndp = avd->avd_val.randptr;
 		assert(rndp);
@@ -221,9 +221,8 @@ avd_get_int(avd_t avd)
 		set_avd_type_by_var(avd, var, 1);
 		return avd_get_int(avd);
 	default:
-		filebench_log(LOG_ERROR,
-			"Attempt to get integer from %s avd",
-			avd_get_type_textified(avd));
+		filebench_log(LOG_ERROR, "Attempt to get integer from %s avd",
+					  avd_get_type_textified(avd));
 		return 0;
 	}
 }
@@ -261,9 +260,8 @@ avd_get_dbl(avd_t avd)
 		set_avd_type_by_var(avd, var, 1);
 		return avd_get_dbl(avd);
 	default:
-		filebench_log(LOG_ERROR,
-			"Attempt to get floating point from %s avd",
-			avd_get_type_textified(avd));
+		filebench_log(LOG_ERROR, "Attempt to get floating point from %s avd",
+					  avd_get_type_textified(avd));
 		return 0.0;
 	}
 }
@@ -285,9 +283,8 @@ avd_get_str(avd_t avd)
 		set_avd_type_by_var(avd, var, 1);
 		return avd_get_str(avd);
 	default:
-		filebench_log(LOG_ERROR,
-			"Attempt to get string from %s avd",
-			avd_get_type_textified(avd));
+		filebench_log(LOG_ERROR, "Attempt to get string from %s avd",
+					  avd_get_type_textified(avd));
 		return NULL;
 	}
 }
@@ -524,8 +521,8 @@ var_assign_custom(char *name, struct cvar *cvar)
  * execution phase. It is called when parser encounters a variable used as a
  * value (for attributes or command arguments, e.g., instances=$myinstances).
  *
- * At this point, the user might or might NOT have set the value (and consequently
- * its type is not known as well).
+ * At this point, the user might or might NOT have set the value (and
+ * consequently its type is not known as well).
  */
 avd_t
 avd_var_alloc(char *varname)
@@ -567,7 +564,7 @@ __var_to_string(var_t *var)
 	}
 
 	if (VAR_HAS_CUSTOM(var))
-			return fb_stralloc("custom variable");
+		return fb_stralloc("custom variable");
 
 	if (VAR_HAS_STRING(var) && var->var_val.string)
 		return fb_stralloc(var->var_val.string);
@@ -580,14 +577,13 @@ __var_to_string(var_t *var)
 	}
 
 	if (VAR_HAS_INTEGER(var)) {
-		(void) snprintf(tmp, sizeof (tmp), "%llu",
-			(u_longlong_t)var->var_val.integer);
+		(void)snprintf(tmp, sizeof(tmp), "%llu",
+					   (u_longlong_t)var->var_val.integer);
 		return fb_stralloc(tmp);
 	}
 
 	if (VAR_HAS_DOUBLE(var)) {
-		(void) snprintf(tmp, sizeof (tmp), "%lf",
-			var->var_val.dbl);
+		(void)snprintf(tmp, sizeof(tmp), "%lf", var->var_val.dbl);
 		return fb_stralloc(tmp);
 	}
 
@@ -661,11 +657,10 @@ var_randvar_to_string(char *name, int param_name)
 
 	default:
 		return NULL;
-
 	}
 
 	/* just an integer value if we got here */
-	(void) snprintf(tmp, sizeof (tmp), "%llu", (u_longlong_t)value);
+	(void)snprintf(tmp, sizeof(tmp), "%llu", (u_longlong_t)value);
 	return (fb_stralloc(tmp));
 }
 
@@ -701,7 +696,8 @@ var_find_local_normal(char *name)
  * variable.  Returns -1 if any problems encountered, 0 otherwise.
  */
 static int
-var_copy(var_t *dst_var, var_t *src_var) {
+var_copy(var_t *dst_var, var_t *src_var)
+{
 	char *strptr;
 
 	if (VAR_HAS_BOOLEAN(src_var))
@@ -716,9 +712,8 @@ var_copy(var_t *dst_var, var_t *src_var) {
 	if (VAR_HAS_STRING(src_var)) {
 		strptr = ipc_stralloc(src_var->var_val.string);
 		if (!strptr) {
-			filebench_log(LOG_ERROR,
-				"Cannot assign string for variable %s",
-				dst_var->var_name);
+			filebench_log(LOG_ERROR, "Cannot assign string for variable %s",
+						  dst_var->var_name);
 			return -1;
 		}
 		VAR_SET_STR(dst_var, strptr);
@@ -754,8 +749,7 @@ var_lvar_assign_var(char *name, char *src_name)
 
 	src_var = var_find_local_normal(src_name);
 	if (!src_var) {
-		filebench_log(LOG_ERROR,
-			"Cannot find source variable %s", src_name);
+		filebench_log(LOG_ERROR, "Cannot find source variable %s", src_name);
 		return NULL;
 	}
 
@@ -772,8 +766,7 @@ var_lvar_assign_var(char *name, char *src_name)
 	} else if (VAR_HAS_STRING(src_var)) {
 		strptr = ipc_stralloc(src_var->var_val.string);
 		if (!strptr) {
-			filebench_log(LOG_ERROR,
-				"Cannot assign variable %s", name);
+			filebench_log(LOG_ERROR, "Cannot assign variable %s", name);
 			return NULL;
 		}
 		VAR_SET_STR(dst_var, strptr);
@@ -792,8 +785,7 @@ var_lvar_assign_boolean(char *name, boolean_t bool)
 
 	var = var_lvar_alloc_local(name);
 	if (!var) {
-		filebench_log(LOG_ERROR, "Cannot assign variable %s",
-			name);
+		filebench_log(LOG_ERROR, "Cannot assign variable %s", name);
 		return NULL;
 	}
 
@@ -809,8 +801,7 @@ var_lvar_assign_integer(char *name, uint64_t integer)
 
 	var = var_lvar_alloc_local(name);
 	if (!var) {
-		filebench_log(LOG_ERROR, "Cannot assign variable %s",
-			name);
+		filebench_log(LOG_ERROR, "Cannot assign variable %s", name);
 		return NULL;
 	}
 
@@ -827,8 +818,7 @@ var_lvar_assign_double(char *name, double dbl)
 	var = var_lvar_alloc_local(name);
 
 	if (!var) {
-		filebench_log(LOG_ERROR, "Cannot assign variable %s",
-						name);
+		filebench_log(LOG_ERROR, "Cannot assign variable %s", name);
 		return NULL;
 	}
 
@@ -845,15 +835,13 @@ var_lvar_assign_string(char *name, char *string)
 
 	var = var_lvar_alloc_local(name);
 	if (!var) {
-		filebench_log(LOG_ERROR, "Cannot assign variable %s",
-					name);
+		filebench_log(LOG_ERROR, "Cannot assign variable %s", name);
 		return NULL;
 	}
 
 	strptr = ipc_stralloc(string);
 	if (!strptr) {
-		filebench_log(LOG_ERROR, "Cannot assign variable %s",
-				name);
+		filebench_log(LOG_ERROR, "Cannot assign variable %s", name);
 		return NULL;
 	}
 
@@ -875,8 +863,7 @@ avd_update(avd_t *avdp, var_t *lvar_list)
 }
 
 void
-var_update_comp_lvars(var_t *newlvar, var_t *proto_comp_vars,
-			var_t *mstr_lvars)
+var_update_comp_lvars(var_t *newlvar, var_t *proto_comp_vars, var_t *mstr_lvars)
 {
 	var_t *proto_lvar;
 
@@ -892,6 +879,6 @@ var_update_comp_lvars(var_t *newlvar, var_t *proto_comp_vars,
 	 */
 	if (VAR_HAS_UNKNOWN(newlvar)) {
 		/* copy value from prototype lvar to new lvar */
-		(void) var_copy(newlvar, proto_lvar);
+		(void)var_copy(newlvar, proto_lvar);
 	}
 }
