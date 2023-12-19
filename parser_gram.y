@@ -138,7 +138,7 @@ static void parser_enable_lathist(cmd_t *cmd);
 %token FSK_IN FSK_QUOTE
 
 %token FSA_SIZE FSA_PREALLOC FSA_PARALLOC FSA_PATH FSA_REUSE
-%token FSA_MEMSIZE FSA_RATE FSA_READONLY FSA_TRUSTTREE
+%token FSA_IMPORT FSA_MEMSIZE FSA_RATE FSA_READONLY FSA_TRUSTTREE
 %token FSA_IOSIZE FSA_FILENAME FSA_WSS FSA_NAME FSA_RANDOM FSA_INSTANCES
 %token FSA_DSYNC FSA_TARGET FSA_ITERS FSA_NICE FSA_VALUE FSA_BLOCKING
 %token FSA_HIGHWATER FSA_DIRECTIO FSA_DIRWIDTH FSA_FD FSA_SRCFD FSA_ROTATEFD
@@ -1053,6 +1053,7 @@ attrs_define_fileset:
 | FSA_SIZE { $$ = FSA_SIZE;}
 | FSA_PREALLOC { $$ = FSA_PREALLOC;}
 | FSA_PARALLOC { $$ = FSA_PARALLOC;}
+| FSA_IMPORT { $$ = FSA_IMPORT;}
 | FSA_REUSE { $$ = FSA_REUSE;}
 | FSA_TRUSTTREE { $$ = FSA_TRUSTTREE;}
 | FSA_READONLY { $$ = FSA_READONLY;}
@@ -2460,6 +2461,12 @@ parser_fileset_define(cmd_t *cmd)
 		fileset->fs_dirgamma = attr->attr_avd;
 	else
 		fileset->fs_dirgamma = avd_int_alloc(1500);
+
+	attr = get_attr(cmd, FSA_IMPORT);
+	if (attr)
+		fileset->fs_import = attr->attr_avd;
+	else
+		fileset->fs_import = avd_bool_alloc(FALSE);
 }
 
 /*

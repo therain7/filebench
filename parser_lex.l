@@ -122,6 +122,7 @@ name                    { return FSA_NAME;}
 nice                    { return FSA_NICE;}
 opennext                { return FSA_ROTATEFD; }
 paralloc                { return FSA_PARALLOC; }
+import                  { return FSA_IMPORT; }
 parameters              { return FSA_PARAMETERS; }
 path                    { return FSA_PATH; }
 prealloc                { return FSA_PREALLOC; }

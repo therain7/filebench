@@ -52,7 +52,6 @@ typedef struct filesetentry {
 	struct filesetentry *fse_nextoftype; /* List of specific fse */
 	struct fileset *fse_fileset;		 /* Parent fileset */
 	char *fse_path;
-	int fse_depth;
 	off64_t fse_size;
 	int fse_open_cnt; /* protected by fs_pick_lock */
 	int fse_flags;	  /* protected by fs_pick_lock */
@@ -100,6 +99,7 @@ typedef struct fileset {
 	/* to 0 for explicit depth */
 	avd_t fs_create;	 /* Attr */
 	avd_t fs_paralloc;	 /* Attr */
+	avd_t fs_import;	 /* Attr */
 	avd_t fs_reuse;		 /* Attr */
 	avd_t fs_readonly;	 /* Attr */
 	avd_t fs_writeonly;	 /* Attr */
