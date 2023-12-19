@@ -32,6 +32,7 @@
 #include <libgen.h>
 #include <sys/mman.h>
 #include <sys/shm.h>
+#include <fts.h>
 
 #include "filebench.h"
 #include "fileset.h"
@@ -428,8 +429,12 @@ fileset_openfile(fb_fdesc_t *fdesc, fileset_t *fileset, filesetentry_t *entry,
 	int open_attrs = 0;
 
 	(void)fb_strlcpy(path, avd_get_str(fileset->fs_path), MAXPATHLEN);
-	(void)fb_strlcat(path, "/", MAXPATHLEN);
-	(void)fb_strlcat(path, avd_get_str(fileset->fs_name), MAXPATHLEN);
+
+	if (!avd_get_bool(fileset->fs_import)) {
+		(void)fb_strlcat(path, "/", MAXPATHLEN);
+		(void)fb_strlcat(path, avd_get_str(fileset->fs_name), MAXPATHLEN);
+	}
+
 	pathtmp = fileset_resolvepath(entry);
 	(void)fb_strlcat(path, pathtmp, MAXPATHLEN);
 	(void)fb_strlcpy(dir, path, MAXPATHLEN);
@@ -1273,6 +1278,111 @@ fileset_entry_compare(const void *node_1, const void *node_2)
 }
 
 /*
+ * Obtains a filesetentry entity for a file. The filesetentry entity is placed
+ * on the fileset's list of all contained files. Sets *new_entry to point to the
+ * created filesetentry if new_entry is not NULL. Returns FILEBENCH_OK if
+ * successful or FILEBENCH_ERROR if ipc memory for the path string cannot be
+ * allocated.
+ */
+static int
+fileset_add_file(fileset_t *fileset, filesetentry_t *parent, const char *name,
+				 off64_t size, filesetentry_t **new_entry)
+{
+	filesetentry_t *entry = ipc_malloc(FILEBENCH_FILESETENTRY);
+	if (!entry) {
+		filebench_log(LOG_ERROR, "fileset_add_file: Can't malloc filesetentry");
+		return (FILEBENCH_ERROR);
+	}
+
+	if (!(entry->fse_path = ipc_pathalloc(name))) {
+		filebench_log(LOG_ERROR, "fileset_add_file: Can't alloc path string");
+		return (FILEBENCH_ERROR);
+	}
+
+	/* Another currently idle file */
+	(void)ipc_mutex_lock(&fileset->fs_pick_lock);
+	uint_t index = fileset->fs_idle_files++;
+	(void)ipc_mutex_unlock(&fileset->fs_pick_lock);
+
+	entry->fse_index = index;
+	entry->fse_parent = parent;
+	entry->fse_fileset = fileset;
+	entry->fse_size = size;
+
+	fileset_insfilelist(fileset, entry);
+
+	fileset->fs_bytes += entry->fse_size;
+	fileset->fs_realfiles++;
+
+	if (new_entry) {
+		*new_entry = entry;
+	}
+	return (FILEBENCH_OK);
+}
+
+/*
+ * Obtains a filesetentry entity for a directory. Does not place the entry in
+ * any of fileset's lists. fileset_add_dir must be called to place the entry in
+ * the corresponding list when it's known if directory is leaf or not. Sets
+ * *new_entry to point to the created filesetentry if new_entry is not NULL.
+ * Returns FILEBENCH_OK if successful or FILEBENCH_ERROR if ipc memory for the
+ * path string cannot be allocated.
+ */
+static int
+fileset_create_dir(fileset_t *fileset, filesetentry_t *parent, const char *name,
+				   filesetentry_t **new_entry)
+{
+	filesetentry_t *entry = ipc_malloc(FILEBENCH_FILESETENTRY);
+	if (!entry) {
+		filebench_log(LOG_ERROR,
+					  "fileset_create_dir: Can't malloc filesetentry");
+		return (FILEBENCH_ERROR);
+	}
+
+	if (!(entry->fse_path = ipc_pathalloc(name))) {
+		filebench_log(LOG_ERROR, "fileset_create_dir: Can't alloc path string");
+		return (FILEBENCH_ERROR);
+	}
+
+	entry->fse_parent = parent;
+	entry->fse_fileset = fileset;
+
+	if (new_entry) {
+		*new_entry = entry;
+	}
+	return (FILEBENCH_OK);
+}
+
+/*
+ * Places the directory filesetentry in the fileset's list of all contained
+ * directories or leaf directories depending on the is_leaf parameter.
+ */
+static void
+fileset_add_dir(fileset_t *fileset, filesetentry_t *dir_entry,
+				boolean_t is_leaf)
+{
+	if (is_leaf) {
+		/* Another currently idle leaf directory */
+		(void)ipc_mutex_lock(&fileset->fs_pick_lock);
+		uint_t index = fileset->fs_idle_leafdirs++;
+		(void)ipc_mutex_unlock(&fileset->fs_pick_lock);
+		dir_entry->fse_index = index;
+
+		fileset_insleafdirlist(fileset, dir_entry);
+		fileset->fs_realleafdirs++;
+		return;
+	}
+
+	/* another idle directory */
+	(void)ipc_mutex_lock(&fileset->fs_pick_lock);
+	uint_t index = fileset->fs_idle_dirs++;
+	(void)ipc_mutex_unlock(&fileset->fs_pick_lock);
+	dir_entry->fse_index = index;
+
+	fileset_insdirlist(fileset, dir_entry);
+}
+
+/*
  * Obtains a filesetentry entity for a file to be placed in a
  * (sub)directory of a fileset. The size of the file may be
  * specified by fileset_meansize, or calculated from a gamma
@@ -1288,138 +1398,69 @@ static int
 fileset_populate_file(fileset_t *fileset, filesetentry_t *parent, int serial)
 {
 	char tmpname[16];
-	filesetentry_t *entry;
-	uint_t index;
-
-	if ((entry = (filesetentry_t *)ipc_malloc(FILEBENCH_FILESETENTRY)) ==
-		NULL) {
-		filebench_log(LOG_ERROR,
-					  "fileset_populate_file: Can't malloc filesetentry");
-		return (FILEBENCH_ERROR);
-	}
-
-	/* Another currently idle file */
-	(void)ipc_mutex_lock(&fileset->fs_pick_lock);
-	index = fileset->fs_idle_files++;
-	(void)ipc_mutex_unlock(&fileset->fs_pick_lock);
-
-	entry->fse_index = index;
-	entry->fse_parent = parent;
-	entry->fse_fileset = fileset;
-	fileset_insfilelist(fileset, entry);
-
 	(void)snprintf(tmpname, sizeof(tmpname), "%08d", serial);
-	if ((entry->fse_path = (char *)ipc_pathalloc(tmpname)) == NULL) {
-		filebench_log(LOG_ERROR,
-					  "fileset_populate_file: Can't alloc path string");
-		return (FILEBENCH_ERROR);
-	}
 
-	entry->fse_size = (off64_t)avd_get_int(fileset->fs_size);
-	fileset->fs_bytes += entry->fse_size;
-
-	fileset->fs_realfiles++;
-	return (FILEBENCH_OK);
+	return fileset_add_file(fileset, parent, tmpname,
+							(off64_t)avd_get_int(fileset->fs_size), NULL);
 }
 
 /*
- * Obtaines a filesetentry entity for a leaf directory to be placed in a
- * (sub)directory of a fileset. The leaf directory will always be empty so
- * it can be created and deleted (mkdir, rmdir) at will. The filesetentry
- * entity is placed on the leaf directory list in the specified parent
- * filesetentry entity, which may be a (sub) directory filesetentry, or
- * the root filesetentry in the fileset. It is also placed on the fileset's
- * list of all contained leaf directories. Returns FILEBENCH_OK if successful
- * or FILEBENCH_ERROR if ipc memory cannot be allocated.
+ * Creates filesetentry for the leaf directory. Adds it to the fileset's list of
+ * all leaf directories. The leaf directory will always be empty so it can be
+ * created and deleted (mkdir, rmdir) at will. Returns FILEBENCH_OK if
+ * successful or FILEBENCH_ERROR if ipc memory cannot be allocated.
  */
 static int
 fileset_populate_leafdir(fileset_t *fileset, filesetentry_t *parent, int serial)
 {
+	int ret;
 	char tmpname[16];
-	filesetentry_t *entry;
-	uint_t index;
-
-	if ((entry = (filesetentry_t *)ipc_malloc(FILEBENCH_FILESETENTRY)) ==
-		NULL) {
-		filebench_log(LOG_ERROR,
-					  "fileset_populate_file: Can't malloc filesetentry");
-		return (FILEBENCH_ERROR);
-	}
-
-	/* Another currently idle leaf directory */
-	(void)ipc_mutex_lock(&fileset->fs_pick_lock);
-	index = fileset->fs_idle_leafdirs++;
-	(void)ipc_mutex_unlock(&fileset->fs_pick_lock);
-
-	entry->fse_index = index;
-	entry->fse_parent = parent;
-	entry->fse_fileset = fileset;
-	fileset_insleafdirlist(fileset, entry);
-
 	(void)snprintf(tmpname, sizeof(tmpname), "%08d", serial);
-	if ((entry->fse_path = (char *)ipc_pathalloc(tmpname)) == NULL) {
-		filebench_log(LOG_ERROR,
-					  "fileset_populate_file: Can't alloc path string");
-		return (FILEBENCH_ERROR);
-	}
 
-	fileset->fs_realleafdirs++;
-	return (FILEBENCH_OK);
+	filesetentry_t *dir_entry;
+	if ((ret = fileset_create_dir(fileset, parent, tmpname, &dir_entry))) {
+		return ret;
+	}
+	fileset_add_dir(fileset, dir_entry, TRUE);
+	fileset_unbusy(dir_entry, TRUE, TRUE, 0);
+
+	return FILEBENCH_OK;
 }
 
 /*
- * Creates a directory node in a fileset, by obtaining a filesetentry entity
- * for the node and initializing it according to parameters of the fileset. It
- * determines a directory tree depth and directory width, optionally using a
- * gamma distribution. If its calculated depth is less then its actual depth in
- * the directory tree, it becomes a leaf node and files itself with "width"
- * number of file type filesetentries, otherwise it files itself with "width"
- * number of directory type filesetentries, using recursive calls to
- * fileset_populate_subdir. The end result of the initial call to this routine
- * is a tree of directories of random width and varying depth with sufficient
- * leaf directories to contain all required files.  Returns FILEBENCH_OK on
- * success. Returns FILEBENCH_ERROR if ipc path string memory cannot be
- * allocated and returns the error code (currently also FILEBENCH_ERROR) from
- * calls to fileset_populate_file or recursive calls to
+ * Creates filesetentry for the directory. Adds it to the fileset's list of
+ * all contained directories. Determines a directory tree depth and directory
+ * width, optionally using a gamma distribution. If its calculated depth is less
+ * then its actual depth in the directory tree, it becomes a leaf node and files
+ * itself with "width" number of file type filesetentries, otherwise it files
+ * itself with "width" number of directory type filesetentries, using recursive
+ * calls to fileset_populate_subdir. The end result of the initial call to this
+ * routine is a tree of directories of random width and varying depth with
+ * sufficient leaf directories to contain all required files.  Returns
+ * FILEBENCH_OK on success. Returns FILEBENCH_ERROR if ipc path string memory
+ * cannot be allocated and returns the error code (currently also
+ * FILEBENCH_ERROR) from calls to fileset_populate_file or recursive calls to
  * fileset_populate_subdir.
  */
 static int
 fileset_populate_subdir(fileset_t *fileset, filesetentry_t *parent, int serial,
 						double depth)
 {
+	int ret;
 	double randepth, drand, ranwidth;
 	int isleaf = 0;
-	char tmpname[16];
-	filesetentry_t *entry;
 	int i;
-	uint_t index;
 
 	depth += 1;
 
-	/* Create dir node */
-	entry = (filesetentry_t *)ipc_malloc(FILEBENCH_FILESETENTRY);
-	if (!entry) {
-		filebench_log(LOG_ERROR,
-					  "fileset_populate_subdir: Can't malloc filesetentry");
-		return (FILEBENCH_ERROR);
-	}
-
-	/* another idle directory */
-	(void)ipc_mutex_lock(&fileset->fs_pick_lock);
-	index = fileset->fs_idle_dirs++;
-	(void)ipc_mutex_unlock(&fileset->fs_pick_lock);
-
+	char tmpname[16];
 	(void)snprintf(tmpname, sizeof(tmpname), "%08d", serial);
-	if ((entry->fse_path = (char *)ipc_pathalloc(tmpname)) == NULL) {
-		filebench_log(LOG_ERROR,
-					  "fileset_populate_subdir: Can't alloc path string");
-		return (FILEBENCH_ERROR);
-	}
 
-	entry->fse_index = index;
-	entry->fse_parent = parent;
-	entry->fse_fileset = fileset;
-	fileset_insdirlist(fileset, entry);
+	filesetentry_t *dir_entry;
+	if ((ret = fileset_create_dir(fileset, parent, tmpname, &dir_entry))) {
+		return ret;
+	}
+	fileset_add_dir(fileset, dir_entry, FALSE);
 
 	if (fileset->fs_dirdepthrv) {
 		randepth = (int)avd_get_int(fileset->fs_dirdepthrv);
@@ -1466,9 +1507,9 @@ fileset_populate_subdir(fileset_t *fileset, filesetentry_t *parent, int serial,
 		int ret = 0;
 
 		if (parent && isleaf)
-			ret = fileset_populate_file(fileset, entry, i);
+			ret = fileset_populate_file(fileset, dir_entry, i);
 		else
-			ret = fileset_populate_subdir(fileset, entry, i, depth);
+			ret = fileset_populate_subdir(fileset, dir_entry, i, depth);
 
 		if (ret != 0)
 			return (ret);
@@ -1485,9 +1526,9 @@ fileset_populate_subdir(fileset_t *fileset, filesetentry_t *parent, int serial,
 		int ret = 0;
 
 		if (parent && isleaf)
-			ret = fileset_populate_leafdir(fileset, entry, i);
+			ret = fileset_populate_leafdir(fileset, dir_entry, i);
 		else
-			ret = fileset_populate_subdir(fileset, entry, i, depth);
+			ret = fileset_populate_subdir(fileset, dir_entry, i, depth);
 
 		if (ret != 0)
 			return (ret);
@@ -1496,38 +1537,12 @@ fileset_populate_subdir(fileset_t *fileset, filesetentry_t *parent, int serial,
 	return (FILEBENCH_OK);
 }
 
-/*
- * Populates a fileset with files and subdirectory entries. Uses the supplied
- * fileset_dirwidth and fileset_entries (number of files) to calculate the
- * required fileset_meandepth (of subdirectories) and initialize the
- * fileset_meanwidth and fileset_meansize variables. Then calls
- * fileset_populate_subdir() to do the recursive subdirectory entry creation
- * and leaf file entry creation. All of the above is skipped if the fileset has
- * already been populated. Returns 0 on success, or an error code from the call
- * to fileset_populate_subdir if that call fails.
- */
-static int
-fileset_populate(fileset_t *fileset)
+/* Initializes fileset's locks, condition variables and trees */
+static void
+fileset_init(fileset_t *fileset)
 {
-	fbint_t entries = avd_get_int(fileset->fs_entries);
-	fbint_t leafdirs = avd_get_int(fileset->fs_leafdirs);
-	int meandirwidth = 0;
-	int ret;
-
-	/* Skip if already populated */
-	if (fileset->fs_bytes > 0)
-		goto exists;
-
-	/* check for raw device */
-	if (fileset->fs_attrs & FILESET_IS_RAW_DEV)
-		return (FILEBENCH_OK);
-
-	/*
-	 * save value of entries and leaf dirs obtained for later
-	 * in case it was random
-	 */
-	fileset->fs_constentries = entries;
-	fileset->fs_constleafdirs = leafdirs;
+	fileset->fs_constentries = 0;
+	fileset->fs_constleafdirs = 0;
 
 	/* initialize idle files and directories condition variables */
 	(void)pthread_cond_init(&fileset->fs_idle_files_cv, ipc_condattr());
@@ -1561,6 +1576,42 @@ fileset_populate(fileset_t *fileset)
 			   sizeof(filesetentry_t), FSE_OFFSETOF(fse_link));
 	avl_create(&(fileset->fs_dirs), fileset_entry_compare,
 			   sizeof(filesetentry_t), FSE_OFFSETOF(fse_link));
+}
+
+/*
+ * Populates a fileset with files and subdirectory entries. Uses the supplied
+ * fileset_dirwidth and fileset_entries (number of files) to calculate the
+ * required fileset_meandepth (of subdirectories) and initialize the
+ * fileset_meanwidth and fileset_meansize variables. Then calls
+ * fileset_populate_subdir() to do the recursive subdirectory entry creation
+ * and leaf file entry creation. All of the above is skipped if the fileset has
+ * already been populated. Returns 0 on success, or an error code from the call
+ * to fileset_populate_subdir if that call fails.
+ */
+static int
+fileset_populate(fileset_t *fileset)
+{
+	fbint_t entries = avd_get_int(fileset->fs_entries);
+	fbint_t leafdirs = avd_get_int(fileset->fs_leafdirs);
+	int meandirwidth = 0;
+	int ret;
+
+	/* Skip if already populated */
+	if (fileset->fs_bytes > 0)
+		goto exists;
+
+	/* check for raw device */
+	if (fileset->fs_attrs & FILESET_IS_RAW_DEV)
+		return (FILEBENCH_OK);
+
+	fileset_init(fileset);
+
+	/*
+	 * save value of entries and leaf dirs obtained for later
+	 * in case it was random
+	 */
+	fileset->fs_constentries = entries;
+	fileset->fs_constleafdirs = leafdirs;
 
 	/* is dirwidth a random variable? */
 	if (AVD_IS_RANDOM(fileset->fs_dirwidth)) {
@@ -1605,6 +1656,116 @@ exists:
 					  fileset->fs_meandepth, leafdirs,
 					  (double)fileset->fs_bytes / 1024UL / 1024UL);
 	}
+
+	return FILEBENCH_OK;
+}
+
+/*
+ * Imports existing directory and file structure located at fs_path as a
+ * fileset. Uses fts_read to traverse the directory tree and create respective
+ * fileset entries. The routine returns FILEBENCH_ERROR on errors, FILEBENCH_OK
+ * on success.
+ */
+static int
+fileset_import(fileset_t *fileset)
+{
+	int ret;
+
+	/* Skip if already imported */
+	if (fileset->fs_bytes > 0)
+		goto exists;
+
+	/* check for raw device */
+	if (fileset->fs_attrs & FILESET_IS_RAW_DEV)
+		return (FILEBENCH_OK);
+
+	char *fileset_path = avd_get_str(fileset->fs_path);
+	if (!fileset_path) {
+		filebench_log(LOG_ERROR, "%s path not set",
+					  fileset_entity_name(fileset));
+		return FILEBENCH_ERROR;
+	}
+
+	fileset_init(fileset);
+
+	filesetentry_t *parent = NULL;
+	fileset_create_dir(fileset, parent, "root", &parent);
+
+	char *paths[] = {fileset_path, NULL};
+	FTS *ftree = fts_open(paths, FTS_LOGICAL, NULL);
+	if (!ftree) {
+		filebench_log(LOG_ERROR, "Failed to open import directory %s",
+					  fileset_path);
+		return FILEBENCH_ERROR;
+	}
+
+	FTSENT *entry = fts_read(ftree); // skip root dir
+	while ((entry = fts_read(ftree))) {
+		switch (entry->fts_info) {
+		case FTS_F: {
+			filebench_log(LOG_DEBUG_IMPL, "Importing file %s of size %d",
+						  entry->fts_name, entry->fts_statp->st_size);
+
+			filesetentry_t *file_entry;
+			if ((ret = fileset_add_file(fileset, parent, entry->fts_name,
+										entry->fts_statp->st_size,
+										&file_entry))) {
+				return ret;
+			}
+			fileset_unbusy(file_entry, TRUE, TRUE, 0); // mark as existant
+
+			entry->fts_parent->fts_number++;
+			break;
+		}
+
+		case FTS_D:
+			filebench_log(LOG_DEBUG_IMPL, "Importing directory %s",
+						  entry->fts_name);
+
+			entry->fts_pointer = parent; // save current parent
+
+			if ((ret = fileset_create_dir(fileset, parent, entry->fts_name,
+										  &parent))) {
+				return ret;
+			}
+
+			entry->fts_parent->fts_number++;
+			break;
+
+		case FTS_DP: {
+			boolean_t is_leaf = entry->fts_number ? FALSE : TRUE;
+
+			filebench_log(LOG_DEBUG_IMPL, "Import: %s has %d children",
+						  parent->fse_path, entry->fts_number);
+
+			fileset_add_dir(fileset, parent, is_leaf);
+			if (is_leaf) {
+				// mark leaf directory as existant
+				fileset_unbusy(parent, TRUE, TRUE, 0);
+			}
+
+			parent = entry->fts_pointer;
+			break;
+		}
+		}
+	}
+
+	if (fts_close(ftree)) {
+		filebench_log(LOG_ERROR, "Failed to close import directory %s",
+					  fileset_path);
+		return FILEBENCH_ERROR;
+	}
+
+	fileset->fs_constentries = fileset->fs_realfiles;
+	fileset->fs_constleafdirs = fileset->fs_realleafdirs;
+
+exists:
+	filebench_log(LOG_INFO,
+				  "%s imported: %llu files, "
+				  "%llu leafdirs, %.3lfMB total size",
+				  avd_get_str(fileset->fs_name), fileset->fs_constentries,
+				  fileset->fs_constleafdirs,
+				  (double)fileset->fs_bytes / 1024UL / 1024UL);
 
 	return FILEBENCH_OK;
 }
@@ -1698,9 +1859,9 @@ fileset_checkraw(fileset_t *fileset)
 }
 
 /*
- * Calls fileset_populate() and fileset_create() for all filesets on the
- * fileset list. Returns when any of fileset_populate() or fileset_create()
- * fail.
+ * Calls fileset_populate() and fileset_create() or fileset_import() for all
+ * filesets on the fileset list. Returns when any of fileset_populate() /
+ * fileset_create() / fileset_import() fail.
  */
 int
 fileset_createsets()
@@ -1726,6 +1887,26 @@ fileset_createsets()
 
 	list = filebench_shm->shm_filesetlist;
 	while (list) {
+		/* check for raw files */
+		if (fileset_checkraw(list)) {
+			filebench_log(LOG_INFO, "File %s/%s is a RAW device",
+						  avd_get_str(list->fs_path),
+						  avd_get_str(list->fs_name));
+			list = list->fs_next;
+			continue;
+		}
+
+		if (avd_get_bool(list->fs_import)) {
+			filebench_log(LOG_INFO, "Import enabled for %s",
+						  avd_get_str(list->fs_name));
+			if ((ret = fileset_import(list))) {
+				return ret;
+			}
+
+			list = list->fs_next;
+			continue;
+		}
+
 		/* Verify fileset parameters are valid */
 		if ((avd_get_int(list->fs_entries) == 0) &&
 			(avd_get_int(list->fs_leafdirs) == 0)) {
@@ -1744,22 +1925,13 @@ fileset_createsets()
 			filebench_shutdown(1);
 		}
 
-		/* check for raw files */
-		if (fileset_checkraw(list)) {
-			filebench_log(LOG_INFO, "File %s/%s is a RAW device",
-						  avd_get_str(list->fs_path),
-						  avd_get_str(list->fs_name));
-			list = list->fs_next;
-			continue;
+		if ((ret = fileset_populate(list))) {
+			return ret;
 		}
 
-		ret = fileset_populate(list);
-		if (ret)
+		if ((ret = fileset_create(list))) {
 			return ret;
-
-		ret = fileset_create(list);
-		if (ret)
-			return ret;
+		}
 
 		list = list->fs_next;
 	}
