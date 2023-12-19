@@ -702,7 +702,7 @@ ipc_stralloc(const char *string)
  * string.
  */
 char *
-ipc_pathalloc(char *path)
+ipc_pathalloc(const char *path)
 {
 	char *allocpath = filebench_shm->shm_path_ptr;
 

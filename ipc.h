@@ -262,7 +262,7 @@ pthread_condattr_t *ipc_condattr(void);
 int ipc_semidalloc(void);
 void ipc_semidfree(int semid);
 char *ipc_stralloc(const char *string);
-char *ipc_pathalloc(char *string);
+char *ipc_pathalloc(const char *string);
 void *ipc_cvar_heapalloc(size_t size);
 void ipc_cvar_heapfree(void *ptr);
 int ipc_mutex_lock(pthread_mutex_t *mutex);
