@@ -78,6 +78,7 @@ static void parser_fileset_list(cmd_t *);
 static void parser_flowop_list(cmd_t *);
 
 /* Define Commands */
+static void parser_buffer_define(cmd_t *);
 static void parser_proc_define(cmd_t *);
 static void parser_thread_define(cmd_t *, procflow_t *);
 static void parser_flowop_define(cmd_t *, threadflow_t *, flowop_t **, int);
@@ -132,7 +133,7 @@ static void parser_enable_lathist(cmd_t *cmd);
 %token FSV_WHITESTRING FSV_RANDUNI FSV_RANDTAB FSV_URAND FSV_RAND48
 
 %token FSE_FILE FSE_FILES FSE_FILESET FSE_PROC FSE_THREAD FSE_FLOWOP FSE_CVAR
-%token FSE_RAND FSE_MODE FSE_MULTI
+%token FSE_RAND FSE_MODE FSE_MULTI FSE_BUFFER
 
 %token FSK_SEPLST FSK_OPENLST FSK_CLOSELST FSK_OPENPAR FSK_CLOSEPAR FSK_ASSIGN
 %token FSK_IN FSK_QUOTE
@@ -160,7 +161,7 @@ static void parser_enable_lathist(cmd_t *cmd);
 %type <sval> name
 
 %type <cmd> command run_command list_command psrun_command
-%type <cmd> proc_define_command files_define_command
+%type <cmd> proc_define_command files_define_command buffer_define_command
 %type <cmd> flowop_define_command debug_command create_command
 %type <cmd> sleep_command set_command
 %type <cmd> system_command flowop_command
@@ -176,8 +177,9 @@ static void parser_enable_lathist(cmd_t *cmd);
 %type <attr> comp_lvar_def comp_attr_op comp_attr_ops
 %type <attr> enable_multi_ops enable_multi_op multisync_op
 %type <attr> cvar_attr_ops cvar_attr_op
+%type <attr> buffer_attr_ops buffer_attr_op
 %type <list> whitevar_string whitevar_string_list
-%type <ival> attrs_define_thread attrs_flowop
+%type <ival> attrs_define_thread attrs_flowop attrs_define_buffer
 %type <ival> attrs_define_fileset attrs_define_file attrs_define_proc attrs_eventgen attrs_define_comp
 %type <ival> randvar_attr_name FSA_TYPE randtype_name
 %type <ival> randsrc_name FSA_RANDSRC em_attr_name
@@ -203,6 +205,7 @@ commands: commands command
 
 command:
   proc_define_command
+| buffer_define_command
 | files_define_command
 | flowop_define_command
 | debug_command
@@ -574,6 +577,16 @@ thread_list: thread
 	$$ = $1;
 };
 
+buffer_define_command: FSC_DEFINE FSE_BUFFER buffer_attr_ops
+{
+	$$ = alloc_cmd();
+	if (!$$)
+		YYERROR;
+
+	$$->cmd = &parser_buffer_define;
+	$$->cmd_attr_list = $3;
+}
+
 proc_define_command: FSC_DEFINE FSE_PROC p_attr_ops FSK_OPENLST thread_list FSK_CLOSELST
 {
 	$$ = alloc_cmd();
@@ -855,6 +868,38 @@ probtabentry_list: probtabentry
 	$$ = $1;
 };
 
+buffer_attr_ops: buffer_attr_op
+{
+	$$ = $1;
+}
+| buffer_attr_ops FSK_SEPLST buffer_attr_op
+{
+	attr_t *attr = NULL;
+	attr_t *list_end = NULL;
+
+	for (attr = $1; attr != NULL;
+	    attr = attr->attr_next)
+		list_end = attr; /* Find end of list */
+
+	list_end->attr_next = $3;
+
+	$$ = $1;
+};
+
+buffer_attr_op: attrs_define_buffer FSK_ASSIGN attr_value
+{
+	$$ = $3;
+	$$->attr_name = $1;
+}
+| attrs_define_buffer
+{
+	$$ = alloc_attr();
+	if (!$$)
+		YYERROR;
+	$$->attr_name = $1;
+	$$->attr_avd = avd_bool_alloc(TRUE);
+};
+
 p_attr_ops: p_attr_op
 {
 	$$ = $1;
@@ -1030,6 +1075,11 @@ multisync_op: FSA_VALUE FSK_ASSIGN attr_value
 /*
  * Attribute names
  */
+attrs_define_buffer:
+  FSA_NAME { $$ = FSA_NAME;}
+| FSA_PATH { $$ = FSA_PATH;}
+| FSA_SIZE { $$ = FSA_SIZE;}
+
 attrs_define_proc:
   FSA_NAME { $$ = FSA_NAME;}
 | FSA_INSTANCES { $$ = FSA_INSTANCES;}
@@ -1827,6 +1877,45 @@ static void
 parser_flowop_list(cmd_t *cmd)
 {
 	flowop_printall();
+}
+
+static void
+parser_buffer_define(cmd_t *cmd)
+{
+	attr_t *attr;
+
+	char *name;
+	attr = get_attr(cmd, FSA_NAME);
+	if (attr)
+		name = avd_get_str(attr->attr_avd);
+	else {
+		filebench_log(LOG_ERROR, "Buffer specifies no name");
+		filebench_shutdown(1);
+	}
+
+	char *path;
+	attr = get_attr(cmd, FSA_PATH);
+	if (attr)
+		path = avd_get_str(attr->attr_avd);
+	else {
+		filebench_log(LOG_ERROR, "Buffer specifies no path");
+		filebench_shutdown(1);
+	}
+
+	size_t size;
+	attr = get_attr(cmd, FSA_SIZE);
+	if (attr)
+		size = avd_get_int(attr->attr_avd);
+	else {
+		filebench_log(LOG_ERROR, "Buffer specifies no size");
+		filebench_shutdown(1);
+	}
+
+	buffer_t *buffer = buffer_define(name, path, size);
+	if (!buffer) {
+		filebench_log(LOG_ERROR, "Failed to define buffer %s", name);
+		filebench_shutdown(1);
+	}
 }
 
 /*

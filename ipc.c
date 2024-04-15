@@ -344,6 +344,8 @@ ipc_init(void)
 							 ipc_mutexattr(IPC_MUTEX_NORMAL));
 	(void)pthread_mutex_init(&filebench_shm->shm_flowop_lock,
 							 ipc_mutexattr(IPC_MUTEX_NORMAL));
+	(void)pthread_mutex_init(&filebench_shm->shm_buffer_lock,
+							 ipc_mutexattr(IPC_MUTEX_NORMAL));
 	(void)pthread_mutex_init(&filebench_shm->shm_eventgen_lock,
 							 ipc_mutexattr(IPC_MUTEX_PRI_ROB));
 	(void)pthread_mutex_init(&filebench_shm->shm_malloc_lock,
@@ -470,6 +472,9 @@ preallocated_entries(int obj_type)
 		entries = sizeof(filebench_shm->shm_cvar_lib_info) /
 				  sizeof(cvar_library_info_t);
 		break;
+	case FILEBENCH_BUFFER:
+		entries = sizeof(filebench_shm->shm_buffer) / sizeof(buffer_t);
+		break;
 	default:
 		entries = -1;
 		filebench_log(LOG_ERROR, "preallocated_entries: "
@@ -579,6 +584,12 @@ ipc_malloc(int obj_type)
 					 sizeof(cvar_library_info_t));
 		(void)ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
 		return ((char *)&filebench_shm->shm_cvar_lib_info[i]);
+
+	case FILEBENCH_BUFFER:
+		(void)memset((char *)&filebench_shm->shm_buffer[i], 0,
+					 sizeof(buffer_t));
+		(void)ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
+		return ((char *)&filebench_shm->shm_buffer[i]);
 	}
 
 	filebench_log(LOG_ERROR, "Attempt to ipc_malloc unknown object type (%d)!",
@@ -656,6 +667,11 @@ ipc_free(int type, char *addr)
 	case FILEBENCH_CVAR_LIB_INFO:
 		base = (caddr_t)&filebench_shm->shm_cvar_lib_info[0];
 		size = sizeof(cvar_library_info_t);
+		break;
+
+	case FILEBENCH_BUFFER:
+		base = (caddr_t)&filebench_shm->shm_buffer[0];
+		size = sizeof(buffer_t);
 		break;
 	}
 
@@ -858,7 +874,7 @@ static int ism_attached = 0;
  * with ID of filebench_shm->shm_id. Returns -1 if shmat()
  * fails, otherwise 0.
  */
-static int
+int
 ipc_ismattach(void)
 {
 #ifdef HAVE_SHM_SHARE_MMU

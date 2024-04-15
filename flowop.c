@@ -407,6 +407,14 @@ flowop_start(threadflow_t *threadflow)
 		threadflow->tf_mem = malloc(memsize);
 	}
 
+	/*
+	 * Make sure ISM is attached if buffers are defined
+	 * as their data is allocated there.
+	 */
+	if (filebench_shm->shm_bufferlist) {
+		(void)ipc_ismattach();
+	}
+
 	(void)memset(threadflow->tf_mem, 0, memsize);
 	filebench_log(LOG_DEBUG_SCRIPT, "Thread allocated %d bytes", memsize);
 

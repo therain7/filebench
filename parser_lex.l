@@ -80,6 +80,7 @@ sleep                   { return FSC_SLEEP; }
 system                  { return FSC_SYSTEM; }
 version                 { return FSC_VERSION; }
 
+buffer       	        { return FSE_BUFFER; }
 file       	        { return FSE_FILE; }
 files       	        { return FSE_FILES; }
 fileset[s]*             { return FSE_FILESET; }
