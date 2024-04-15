@@ -17,6 +17,7 @@ filebench_SOURCES = eventgen.c fb_avl.c fb_localfs.c \
 		    misc.h procflow.h threadflow.h vars.h ioprio.h flag.h \
 		    fbtime.c fbtime.h \
 		    fb_cvar.c fb_cvar.h aslr.c aslr.h \
+			buffer.c buffer.h \
 		    cvars/mtwist/mtwist.c cvars/mtwist/mtwist.h
 
 EXTRA_DIST = LICENSE

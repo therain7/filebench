@@ -779,6 +779,11 @@ proc_create()
 		return;
 	}
 
+	if (buffer_allocate_all()) {
+		filebench_log(LOG_ERROR, "Could not allocate buffers");
+		filebench_shutdown(1);
+	}
+
 	/* Release the read lock, allowing threads to start */
 	(void)pthread_rwlock_unlock(&filebench_shm->shm_run_lock);
 

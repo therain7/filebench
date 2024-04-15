@@ -65,7 +65,8 @@
 #define FILEBENCH_RANDDIST 7
 #define FILEBENCH_CVAR 8
 #define FILEBENCH_CVAR_LIB_INFO 9
-#define FILEBENCH_MAXTYPE (FILEBENCH_CVAR_LIB_INFO + 1)
+#define FILEBENCH_BUFFER 10
+#define FILEBENCH_MAXTYPE (FILEBENCH_BUFFER + 1)
 
 /*
  * The values below are selected by intuition: these limits
@@ -73,6 +74,7 @@
  * one needs more processes, threads, flowops, etc., one
  * has to increase these values
  */
+#define FILEBENCH_NBUFFERS (16)
 #define FILEBENCH_NFILESETS (16)
 #define FILEBENCH_NFILESETENTRIES (1024 * 1024)
 #define FILEBENCH_NPROCFLOWS (1024)
@@ -114,6 +116,8 @@ typedef struct filebench_shm {
 	pthread_mutex_t shm_threadflow_lock;
 	flowop_t *shm_flowoplist;
 	pthread_mutex_t shm_flowop_lock;
+	buffer_t *shm_bufferlist;
+	pthread_mutex_t shm_buffer_lock;
 
 	/*
 	 * parallel file allocation  control. Restricts number of spawned
@@ -230,6 +234,7 @@ typedef struct filebench_shm {
 	 * when ipc_malloc() is called. Not zeroed, but
 	 * ipc_malloc() will bzero each allocated slot.
 	 */
+	buffer_t shm_buffer[FILEBENCH_NBUFFERS];
 	fileset_t shm_fileset[FILEBENCH_NFILESETS];
 	filesetentry_t shm_filesetentry[FILEBENCH_NFILESETENTRIES];
 	procflow_t shm_procflow[FILEBENCH_NPROCFLOWS];
@@ -270,6 +275,7 @@ int ipc_mutex_unlock(pthread_mutex_t *mutex);
 void ipc_seminit(void);
 char *ipc_ismmalloc(size_t size);
 int ipc_ismcreate(size_t size);
+int ipc_ismattach(void);
 void ipc_ismdelete(void);
 void ipc_fini(void);
 
