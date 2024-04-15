@@ -40,9 +40,12 @@ typedef enum fb_plugin_type {
 } fb_plugin_type_t;
 
 /* universal file descriptor for both local and nfs file systems */
-typedef union fb_fdesc {
-	int fd_num;	  /* OS file descriptor number */
-	void *fd_ptr; /* Pointer to nfs information block */
+typedef struct {
+	union {
+		int fd_num;	  /* OS file descriptor number */
+		void *fd_ptr; /* Pointer to nfs information block */
+	};
+	off64_t fd_offset;
 } fb_fdesc_t;
 
 typedef struct aiolist aiol_t;
