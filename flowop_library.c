@@ -532,9 +532,8 @@ flowoplib_read(threadflow_t *threadflow, flowop_t *flowop)
 		/* select randomly */
 		fb_random64(&fileoffset, wss, iosize, NULL);
 
-		(void)flowop_beginop(threadflow, flowop);
+		flowop_beginop(threadflow, flowop);
 		if ((ret = FB_PREAD(fdesc, iobuf, iosize, (off64_t)fileoffset)) == -1) {
-			(void)flowop_endop(threadflow, flowop, 0);
 			filebench_log(LOG_ERROR,
 						  "read file %s failed, offset %llu "
 						  "io buffer %zd: %s",
@@ -543,28 +542,29 @@ flowoplib_read(threadflow_t *threadflow, flowop_t *flowop)
 			flowop_endop(threadflow, flowop, 0);
 			return (FILEBENCH_ERROR);
 		}
-		(void)flowop_endop(threadflow, flowop, ret);
+		flowop_endop(threadflow, flowop, ret);
 
-		if ((ret == 0))
-			(void)FB_LSEEK(fdesc, 0, SEEK_SET);
-
-	} else {
-		(void)flowop_beginop(threadflow, flowop);
-		if ((ret = FB_READ(fdesc, iobuf, iosize)) == -1) {
-			(void)flowop_endop(threadflow, flowop, 0);
-			filebench_log(LOG_ERROR, "read file %s failed, io buffer %zd: %s",
-						  avd_get_str(flowop->fo_fileset->fs_name), iobuf,
-						  strerror(errno));
-			(void)flowop_endop(threadflow, flowop, 0);
-			return (FILEBENCH_ERROR);
-		}
-		(void)flowop_endop(threadflow, flowop, ret);
-
-		if ((ret == 0))
-			(void)FB_LSEEK(fdesc, 0, SEEK_SET);
+		return FILEBENCH_OK;
 	}
 
-	return (FILEBENCH_OK);
+	if (fdesc->fd_offset == wss) {
+		filebench_log(LOG_INFO, "%s: reached the end of file in flowop %s-%d",
+					  threadflow->tf_name, flowop->fo_name,
+					  flowop->fo_instance);
+		return FILEBENCH_NORSC;
+	}
+
+	flowop_beginop(threadflow, flowop);
+	if ((ret = FB_READ(fdesc, iobuf, iosize)) == -1) {
+		filebench_log(LOG_ERROR, "read file %s failed, io buffer %zd: %s",
+					  avd_get_str(flowop->fo_fileset->fs_name), iobuf,
+					  strerror(errno));
+		flowop_endop(threadflow, flowop, 0);
+		return (FILEBENCH_ERROR);
+	}
+	flowop_endop(threadflow, flowop, ret);
+
+	return FILEBENCH_OK;
 }
 
 /*
@@ -2257,16 +2257,27 @@ flowoplib_write(threadflow_t *threadflow, flowop_t *flowop)
 			return (FILEBENCH_ERROR);
 		}
 		flowop_endop(threadflow, flowop, iosize);
-	} else {
-		flowop_beginop(threadflow, flowop);
-		if (FB_WRITE(fdesc, iobuf, iosize) == -1) {
-			filebench_log(LOG_ERROR, "write failed, io buffer %zd: %s", iobuf,
-						  strerror(errno));
-			flowop_endop(threadflow, flowop, 0);
-			return (FILEBENCH_ERROR);
-		}
-		flowop_endop(threadflow, flowop, iosize);
+		return FILEBENCH_OK;
 	}
+
+	if (fdesc->fd_offset == wss) {
+		filebench_log(LOG_INFO, "%s: reached the end of file in flowop %s-%d",
+					  threadflow->tf_name, flowop->fo_name,
+					  flowop->fo_instance);
+		return FILEBENCH_NORSC;
+	}
+
+	/* Don't write over the file's end */
+	iosize = MIN(wss - fdesc->fd_offset, iosize);
+
+	flowop_beginop(threadflow, flowop);
+	if (FB_WRITE(fdesc, iobuf, iosize) == -1) {
+		filebench_log(LOG_ERROR, "write failed, io buffer %zd: %s", iobuf,
+					  strerror(errno));
+		flowop_endop(threadflow, flowop, 0);
+		return (FILEBENCH_ERROR);
+	}
+	flowop_endop(threadflow, flowop, iosize);
 
 	return (FILEBENCH_OK);
 }
