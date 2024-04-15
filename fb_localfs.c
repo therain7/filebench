@@ -189,7 +189,11 @@ fb_lfs_pread(fb_fdesc_t *fd, caddr_t iobuf, fbint_t iosize, off64_t fileoffset)
 static int
 fb_lfs_read(fb_fdesc_t *fd, caddr_t iobuf, fbint_t iosize)
 {
-	return (read(fd->fd_num, iobuf, iosize));
+	ssize_t ret = read(fd->fd_num, iobuf, iosize);
+	if (ret != -1)
+		fd->fd_offset += ret;
+
+	return ret;
 }
 
 #ifdef HAVE_AIO
@@ -474,8 +478,10 @@ fb_lfs_open(fb_fdesc_t *fd, char *path, int flags, int perms)
 {
 	if ((fd->fd_num = open64(path, flags, perms)) < 0)
 		return (FILEBENCH_ERROR);
-	else
+	else {
+		fd->fd_offset = 0;
 		return (FILEBENCH_OK);
+	}
 }
 
 /*
@@ -511,7 +517,11 @@ fb_lfs_fsync(fb_fdesc_t *fd)
 static int
 fb_lfs_lseek(fb_fdesc_t *fd, off64_t offset, int whence)
 {
-	return (lseek64(fd->fd_num, offset, whence));
+	off64_t ret = lseek64(fd->fd_num, offset, whence);
+	if (ret != -1)
+		fd->fd_offset = ret;
+
+	return ret;
 }
 
 /*
@@ -629,7 +639,11 @@ fb_lfs_pwrite(fb_fdesc_t *fd, caddr_t iobuf, fbint_t iosize, off64_t offset)
 static int
 fb_lfs_write(fb_fdesc_t *fd, caddr_t iobuf, fbint_t iosize)
 {
-	return (write(fd->fd_num, iobuf, iosize));
+	ssize_t ret = write(fd->fd_num, iobuf, iosize);
+	if (ret != -1)
+		fd->fd_offset += ret;
+
+	return ret;
 }
 
 /*
