@@ -67,6 +67,7 @@ typedef struct filesetentry {
 /* other pick flags */
 #define FILESET_PICKUNIQUE 0x04	 /* Pick a unique file or leafdir from the */
 								 /* fileset until empty */
+#define FILESET_PICKBYPATH 0x08	 /* Use supplied path to select entry */
 #define FILESET_PICKEXISTS 0x10	 /* Pick an existing file */
 #define FILESET_PICKNOEXIST 0x20 /* Pick a file that doesn't exist */
 #define FILESET_PICKBYINDEX                                                    \
@@ -151,7 +152,8 @@ int fileset_openfile(fb_fdesc_t *fd, fileset_t *fileset, filesetentry_t *entry,
 					 int flag, int mode, int attrs);
 fileset_t *fileset_define(avd_t name, avd_t path);
 fileset_t *fileset_find(char *name);
-filesetentry_t *fileset_pick(fileset_t *fileset, int flags, int tid, int index);
+filesetentry_t *fileset_pick(fileset_t *fileset, int flags, int tid, int index,
+							 char *path);
 char *fileset_resolvepath(filesetentry_t *entry);
 int fileset_iter(int (*cmd)(fileset_t *fileset, int first));
 int fileset_print(fileset_t *fileset, int first);
