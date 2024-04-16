@@ -248,8 +248,12 @@ flowoplib_pickfile(filesetentry_t **filep, flowop_t *flowop, int flags, int tid)
 		fileindex = 0;
 	}
 
+	char *path = flowop->fo_entry_path;
+	if (path)
+		flags |= FILESET_PICKBYPATH;
+
 	if ((*filep = fileset_pick(fileset, FILESET_PICKFILE | flags, tid,
-							   fileindex)) == NULL) {
+							   fileindex, path)) == NULL) {
 		filebench_log(LOG_DEBUG_SCRIPT,
 					  "flowop %s failed to pick file from fileset %s",
 					  flowop->fo_name, avd_get_str(fileset->fs_name));
@@ -286,8 +290,12 @@ flowoplib_pickleafdir(filesetentry_t **dirp, flowop_t *flowop, int flags)
 		dirindex = 0;
 	}
 
-	if ((*dirp = fileset_pick(fileset, FILESET_PICKLEAFDIR | flags, 0,
-							  dirindex)) == NULL) {
+	char *path = flowop->fo_entry_path;
+	if (path)
+		flags |= FILESET_PICKBYPATH;
+
+	if ((*dirp = fileset_pick(fileset, FILESET_PICKLEAFDIR | flags, 0, dirindex,
+							  path)) == NULL) {
 		filebench_log(LOG_DEBUG_SCRIPT,
 					  "flowop %s failed to pick directory from fileset %s",
 					  flowop->fo_name, avd_get_str(fileset->fs_name));
@@ -2006,7 +2014,7 @@ flowoplib_listdir(threadflow_t *threadflow, flowop_t *flowop)
 		return (FILEBENCH_ERROR);
 	}
 
-	if ((dir = fileset_pick(fileset, FILESET_PICKDIR, 0, 0)) == NULL) {
+	if ((dir = fileset_pick(fileset, FILESET_PICKDIR, 0, 0, NULL)) == NULL) {
 		filebench_log(LOG_DEBUG_SCRIPT,
 					  "flowop %s failed to pick directory from fileset %s",
 					  flowop->fo_name, avd_get_str(fileset->fs_name));

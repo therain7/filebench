@@ -1175,7 +1175,8 @@ attrs_flowop:
 | FSA_BLOCKING { $$ = FSA_BLOCKING;}
 | FSA_HIGHWATER { $$ = FSA_HIGHWATER;}
 | FSA_IOSIZE { $$ = FSA_IOSIZE;}
-| FSA_NOREADAHEAD { $$ = FSA_NOREADAHEAD;};
+| FSA_NOREADAHEAD { $$ = FSA_NOREADAHEAD;}
+| FSA_PATH { $$ = FSA_PATH;};
 
 attrs_eventgen:
   FSA_RATE { $$ = FSA_RATE;};
@@ -2152,6 +2153,10 @@ parser_flowop_get_attrs(cmd_t *cmd, flowop_t *flowop)
 	else
 		flowop->fo_fileindex = NULL;
 
+	if ((attr = get_attr(cmd, FSA_PATH)))
+		flowop->fo_entry_path = avd_get_str(attr->attr_avd);
+	else
+		flowop->fo_entry_path = NULL;
 	/* Read Ahead Diable */
 	if ((attr = get_attr(cmd, FSA_NOREADAHEAD)))
 		flowop->fo_noreadahead = attr->attr_avd;

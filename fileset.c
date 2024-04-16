@@ -595,6 +595,20 @@ fileset_find_entry(avl_tree_t *atp, uint_t index)
 	return (found_fse);
 }
 
+static filesetentry_t *
+fileset_find_entry_by_path(avl_tree_t *atp, char *path)
+{
+	filesetentry_t *entry = avl_first(atp);
+	while (entry) {
+		if (!(strcmp(fileset_resolvepath(entry), path)))
+			return entry;
+
+		entry = AVL_NEXT(atp, entry);
+	}
+
+	return NULL;
+}
+
 /*
  * Selects a fileset entry from a fileset. If the
  * FILESET_PICKLEAFDIR flag is set it will pick a leaf directory entry,
@@ -611,7 +625,7 @@ fileset_find_entry(avl_tree_t *atp, uint_t index)
  * with its FSE_BUSY flag (in fse_flags) set.
  */
 filesetentry_t *
-fileset_pick(fileset_t *fileset, int flags, int tid, int index)
+fileset_pick(fileset_t *fileset, int flags, int tid, int index, char *path)
 {
 	filesetentry_t *entry = NULL;
 	filesetentry_t *start_point;
@@ -716,6 +730,11 @@ fileset_pick(fileset_t *fileset, int flags, int tid, int index)
 	} else if (flags & FILESET_PICKBYINDEX) {
 		/* pick by supplied index */
 		entry = fileset_find_entry(atp, index);
+
+	} else if (flags & FILESET_PICKBYPATH) {
+		/* pick by supplied path */
+		filebench_log(LOG_DEBUG_IMPL, "Picking fileset entry by path %s", path);
+		entry = fileset_find_entry_by_path(atp, path);
 
 	} else {
 		/* pick in rotation */
@@ -1036,7 +1055,7 @@ fileset_create(fileset_t *fileset)
 	/* alloc any files, as required */
 	fileset_pickreset(fileset, FILESET_PICKFILE);
 	while ((entry = fileset_pick(fileset, FILESET_PICKFREE | FILESET_PICKFILE,
-								 0, 0))) {
+								 0, 0, NULL))) {
 		pthread_t tid;
 		int newrand;
 
@@ -1102,7 +1121,7 @@ fileset_create(fileset_t *fileset)
 	/* alloc any leaf directories, as required */
 	fileset_pickreset(fileset, FILESET_PICKLEAFDIR);
 	while ((entry = fileset_pick(
-				fileset, FILESET_PICKFREE | FILESET_PICKLEAFDIR, 0, 0))) {
+				fileset, FILESET_PICKFREE | FILESET_PICKLEAFDIR, 0, 0, NULL))) {
 
 		if (rand() < randno) {
 			/* unbusy the unallocated entry */
