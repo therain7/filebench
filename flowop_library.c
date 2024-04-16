@@ -434,6 +434,27 @@ flowoplib_iobufsetup(threadflow_t *threadflow, flowop_t *flowop,
 	if (flowoplib_fileattrs(flowop) & FLOW_ATTR_DIRECTIO)
 		iosize = iosize + 512;
 
+	/* Use user specified custom buffer */
+	if (flowop->fo_bufname) {
+		buffer_t *buf = buffer_find_by_name(flowop->fo_bufname);
+		if (!buf) {
+			filebench_log(LOG_ERROR, "Failed to find buffer %s",
+						  flowop->fo_bufname);
+			return FILEBENCH_ERROR;
+		}
+
+		if (buf->size < iosize) {
+			filebench_log(
+				LOG_ERROR,
+				"%s buffer's size is smaller than IO size for thread %s",
+				buf->name, flowop->fo_name);
+			return FILEBENCH_ERROR;
+		}
+
+		*iobufp = buf->data;
+		return FILEBENCH_OK;
+	}
+
 	if ((memsize = threadflow->tf_constmemsize) != 0) {
 		/* use tf_mem for I/O with random offset */
 

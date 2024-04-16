@@ -138,6 +138,7 @@ round			{ return FSA_ROUND; }
 seed			{ return FSA_RANDSEED; }
 size                    { return FSA_SIZE; }
 srcfd                   { return FSA_SRCFD; }
+buf                   { return FSA_BUF; }
 target                  { return FSA_TARGET;}
 timeout                 { return FSA_TIMEOUT; }
 trusttree		{ return FSA_TRUSTTREE; }

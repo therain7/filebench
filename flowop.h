@@ -46,6 +46,7 @@ typedef struct flowop {
 	fileset_t *fo_fileset;		  /* Fileset for op */
 	int fo_fdnumber;			  /* User specified file descriptor */
 	int fo_srcfdnumber;			  /* User specified src file descriptor */
+	char *fo_bufname;			  /* User specified buffer name */
 	char *fo_entry_path;		  /* User specified fileset entry path */
 	fbint_t fo_constvalue;		  /* constant version of fo_value */
 	fbint_t fo_constwss;		  /* constant version of fo_wss */

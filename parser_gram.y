@@ -143,7 +143,7 @@ static void parser_enable_lathist(cmd_t *cmd);
 %token FSA_IOSIZE FSA_FILENAME FSA_WSS FSA_NAME FSA_RANDOM FSA_INSTANCES
 %token FSA_DSYNC FSA_TARGET FSA_ITERS FSA_NICE FSA_VALUE FSA_BLOCKING
 %token FSA_HIGHWATER FSA_DIRECTIO FSA_DIRWIDTH FSA_FD FSA_SRCFD FSA_ROTATEFD
-%token FSA_ENTRIES FSA_DIRDEPTHRV FSA_DIRGAMMA FSA_USEISM FSA_TYPE
+%token FSA_ENTRIES FSA_DIRDEPTHRV FSA_DIRGAMMA FSA_USEISM FSA_TYPE FSA_BUF
 %token FSA_LEAFDIRS FSA_INDEXED FSA_RANDTABLE FSA_RANDSRC FSA_ROUND
 %token FSA_RANDSEED FSA_RANDGAMMA FSA_RANDMEAN FSA_MIN FSA_MAX FSA_MASTER
 %token FSA_CLIENT FSS_TYPE FSS_SEED FSS_GAMMA FSS_MEAN FSS_MIN FSS_SRC FSS_ROUND
@@ -1176,7 +1176,8 @@ attrs_flowop:
 | FSA_HIGHWATER { $$ = FSA_HIGHWATER;}
 | FSA_IOSIZE { $$ = FSA_IOSIZE;}
 | FSA_NOREADAHEAD { $$ = FSA_NOREADAHEAD;}
-| FSA_PATH { $$ = FSA_PATH;};
+| FSA_PATH { $$ = FSA_PATH;}
+| FSA_BUF { $$ = FSA_BUF;};
 
 attrs_eventgen:
   FSA_RATE { $$ = FSA_RATE;};
@@ -2157,6 +2158,12 @@ parser_flowop_get_attrs(cmd_t *cmd, flowop_t *flowop)
 		flowop->fo_entry_path = avd_get_str(attr->attr_avd);
 	else
 		flowop->fo_entry_path = NULL;
+
+	if ((attr = get_attr(cmd, FSA_BUF)))
+		flowop->fo_bufname = avd_get_str(attr->attr_avd);
+	else
+		flowop->fo_bufname = NULL;
+
 	/* Read Ahead Diable */
 	if ((attr = get_attr(cmd, FSA_NOREADAHEAD)))
 		flowop->fo_noreadahead = attr->attr_avd;
