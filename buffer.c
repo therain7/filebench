@@ -49,6 +49,11 @@ buffer_allocate(buffer_t *buf)
 					  buf->name);
 		return FILEBENCH_ERROR;
 	}
+	buf->data = data;
+
+	/* Path is not specified */
+	if (!buf->path)
+		return FILEBENCH_OK;
 
 	FILE *file;
 	if (!(file = fopen(buf->path, "r"))) {
@@ -63,8 +68,6 @@ buffer_allocate(buffer_t *buf)
 		return FILEBENCH_ERROR;
 	}
 	fclose(file);
-
-	buf->data = data;
 
 	return FILEBENCH_OK;
 }

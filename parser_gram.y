@@ -1895,14 +1895,10 @@ parser_buffer_define(cmd_t *cmd)
 		filebench_shutdown(1);
 	}
 
-	char *path;
+	char *path = NULL;
 	attr = get_attr(cmd, FSA_PATH);
 	if (attr)
 		path = avd_get_str(attr->attr_avd);
-	else {
-		filebench_log(LOG_ERROR, "Buffer specifies no path");
-		filebench_shutdown(1);
-	}
 
 	size_t size;
 	attr = get_attr(cmd, FSA_SIZE);
