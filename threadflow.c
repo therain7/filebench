@@ -73,7 +73,7 @@ threadflow_createthread(threadflow_t *threadflow)
 				  threadflow->tf_name, memsize);
 
 	if (threadflow->tf_attrs & THREADFLOW_USEISM)
-		filebench_shm->shm_required += memsize;
+		filebench_shm->ism_required += memsize;
 
 	ret = pthread_create(&threadflow->tf_tid, NULL,
 						 (void *(*)(void *))flowop_start, threadflow);
@@ -199,7 +199,7 @@ threadflow_kill(threadflow_t *threadflow)
  * list after first terminating the threadflow's thread, deleting
  * the threadflow's flowops, and finally freeing the threadflow
  * entity. It also subtracts the threadflow's shared memory
- * requirements from the total amount required, shm_required. If
+ * requirements from the total amount required, ism_required. If
  * the specified threadflow is found, returns 0, otherwise
  * returns -1.
  */
@@ -212,7 +212,7 @@ threadflow_delete(threadflow_t **threadlist, threadflow_t *threadflow)
 				  threadflow->tf_name, threadflow->tf_instance);
 
 	if (threadflow->tf_attrs & THREADFLOW_USEISM)
-		filebench_shm->shm_required -= threadflow->tf_constmemsize;
+		filebench_shm->ism_required -= threadflow->tf_constmemsize;
 
 	if (threadflow == *threadlist) {
 		/* First on list */

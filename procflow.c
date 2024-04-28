@@ -773,8 +773,7 @@ proc_create()
 	 * Make sure we create the shared memory before we wake up worker
 	 * processes, which will alloc memory from this shm.
 	 */
-	if (filebench_shm->shm_required &&
-		(ipc_ismcreate(filebench_shm->shm_required) < 0)) {
+	if (filebench_shm->ism_required && (ipc_ismcreate() < 0)) {
 		filebench_log(LOG_ERROR, "Could not allocate shared memory");
 		return;
 	}
@@ -801,7 +800,7 @@ proc_shutdown()
 {
 	filebench_log(LOG_INFO, "Shutting down processes");
 	procflow_shutdown();
-	if (filebench_shm->shm_required)
+	if (filebench_shm->ism_required)
 		ipc_ismdelete();
 	eventgen_reset();
 }
