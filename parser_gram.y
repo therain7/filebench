@@ -1909,7 +1909,7 @@ parser_buffer_define(cmd_t *cmd)
 		filebench_shutdown(1);
 	}
 
-	buffer_t *buffer = buffer_define(name, path, size);
+	struct buffer *buffer = buffer_define(name, path, size);
 	if (!buffer) {
 		filebench_log(LOG_ERROR, "Failed to define buffer %s", name);
 		filebench_shutdown(1);

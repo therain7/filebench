@@ -33,14 +33,16 @@
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <sys/errno.h>
-#include <signal.h>
 #include <pthread.h>
-#include <sys/shm.h>
+#include <sys/mman.h>
 #include "filebench.h"
 #include "fb_cvar.h"
 
 filebench_shm_t *filebench_shm = NULL;
-char shmpath[128] = "/tmp/filebench-shm-XXXXXX";
+void *filebench_ism = NULL;
+
+char shmpath[] = "/tmp/filebench-shm-XXXXXX";
+char *ismname = "/filebench-ism";
 
 /*
  * Interprocess Communication mechanisms. If multiple processes
@@ -331,7 +333,6 @@ ipc_init(void)
 
 	filebench_shm->shm_rmode = FILEBENCH_MODE_TIMEOUT;
 	filebench_shm->shm_string_ptr = &filebench_shm->shm_strings[0];
-	filebench_shm->shm_ptr = (char *)filebench_shm->shm_addr;
 	filebench_shm->shm_path_ptr = &filebench_shm->shm_filesetpaths[0];
 
 	(void)pthread_mutex_init(&filebench_shm->shm_fileset_lock,
@@ -373,7 +374,6 @@ ipc_init(void)
 	filebench_shm->shm_sys_semid = -1;
 	filebench_shm->shm_dump_fd = -1;
 	filebench_shm->shm_eventgen_hz = 0;
-	filebench_shm->shm_id = -1;
 
 	filebench_shm->shm_filesys_type = LOCAL_FS_PLUG;
 }
@@ -412,7 +412,7 @@ ipc_attach(void *shmaddr, char *shmpath)
 
 	if ((filebench_shm = (filebench_shm_t *)mmap(
 			 shmaddr, sizeof(filebench_shm_t), PROT_READ | PROT_WRITE,
-			 MAP_SHARED | MAP_FIXED, shmfd, 0)) == MAP_FAILED) {
+			 MAP_SHARED | MAP_FIXED_NOREPLACE, shmfd, 0)) == MAP_FAILED) {
 		filebench_log(LOG_FATAL,
 					  "Could not mmap the shared "
 					  "memory file: %s",
@@ -460,7 +460,7 @@ preallocated_entries(int obj_type)
 		entries = sizeof(filebench_shm->shm_var) / sizeof(var_t);
 		break;
 	case FILEBENCH_AVD:
-		entries = sizeof(filebench_shm->shm_avd_ptrs) / sizeof(avd_t);
+		entries = sizeof(filebench_shm->shm_avd_ptrs) / sizeof(struct avd);
 		break;
 	case FILEBENCH_RANDDIST:
 		entries = sizeof(filebench_shm->shm_randdist) / sizeof(randdist_t);
@@ -473,7 +473,7 @@ preallocated_entries(int obj_type)
 				  sizeof(cvar_library_info_t);
 		break;
 	case FILEBENCH_BUFFER:
-		entries = sizeof(filebench_shm->shm_buffer) / sizeof(buffer_t);
+		entries = sizeof(filebench_shm->shm_buffer) / sizeof(struct buffer);
 		break;
 	default:
 		entries = -1;
@@ -587,7 +587,7 @@ ipc_malloc(int obj_type)
 
 	case FILEBENCH_BUFFER:
 		(void)memset((char *)&filebench_shm->shm_buffer[i], 0,
-					 sizeof(buffer_t));
+					 sizeof(struct buffer));
 		(void)ipc_mutex_unlock(&filebench_shm->shm_malloc_lock);
 		return ((char *)&filebench_shm->shm_buffer[i]);
 	}
@@ -671,7 +671,7 @@ ipc_free(int type, char *addr)
 
 	case FILEBENCH_BUFFER:
 		base = (caddr_t)&filebench_shm->shm_buffer[0];
-		size = sizeof(buffer_t);
+		size = sizeof(struct buffer);
 		break;
 	}
 
@@ -813,137 +813,113 @@ ipc_semidfree(int semid)
 }
 
 /*
- * Create a pool of shared memory to fit the per-thread
- * allocations. Uses shmget() to create a shared memory region
- * of size "size", attaches to it using shmat(), and stores
- * the returned address of the region in filebench_shm->shm_addr.
- * The pool is only created on the first call. The routine
- * returns 0 if successful or the pool already exists,
- * -1 otherwise.
+ * Create and attach ISM (Interprocess Shared Memory).
+ * Attached memory address is stored in filebench_ism
  */
 int
-ipc_ismcreate(size_t size)
+ipc_ismcreate(void)
 {
-#ifdef HAVE_SHM_SHARE_MMU
-	int flag = SHM_SHARE_MMU;
-#else
-	int flag = 0;
-#endif /* HAVE_SHM_SHARE_MMU */
-
-	/* Already done? */
-	if (filebench_shm->shm_id != -1)
-		return (0);
-
-	filebench_log(LOG_VERBOSE, "Creating %zd bytes of ISM Shared Memory...",
-				  size);
-
-	if ((filebench_shm->shm_id = shmget(0, size, IPC_CREAT | 0666)) == -1) {
-		filebench_log(
-			LOG_ERROR,
-			"Failed to create %zd bytes of ISM shared memory (ret = %d)", size,
-			errno);
-		return (-1);
+	if (filebench_ism) {
+		filebench_log(LOG_ERROR, "ISM is already created and attached");
+		return FILEBENCH_ERROR;
 	}
 
-	if ((filebench_shm->shm_addr =
-			 (caddr_t)shmat(filebench_shm->shm_id, 0, flag)) == (void *)-1) {
-		filebench_log(LOG_ERROR,
-					  "Failed to attach %zd bytes of created ISM shared memory",
-					  size);
-		return (-1);
+	size_t size = filebench_shm->ism_required;
+	filebench_log(LOG_VERBOSE, "Creating %zd bytes of ISM", size);
+
+	int fd = shm_open(ismname, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+	if (fd == -1) {
+		filebench_log(LOG_ERROR, "Failed to create ISM: %s", strerror(errno));
+		return FILEBENCH_ERROR;
 	}
 
-	filebench_shm->shm_ptr = (char *)filebench_shm->shm_addr;
+	if (ftruncate(fd, size) == -1) {
+		filebench_log(LOG_ERROR, "Failed to truncate ISM to %zd bytes: %s",
+					  size, strerror(errno));
+		return FILEBENCH_ERROR;
+	}
 
-	filebench_log(LOG_VERBOSE,
-				  "Allocated %zd bytes of ISM Shared Memory... at %zx", size,
-				  filebench_shm->shm_addr);
+	void *ism = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	if (ism == MAP_FAILED) {
+		filebench_log(LOG_ERROR, "Failed to map ISM: %s", strerror(errno));
+		return FILEBENCH_ERROR;
+	}
+	filebench_ism = ism;
+	(void)close(fd);
 
-	/* Locked until allocated to block allocs */
+	// locked until allocated to block allocs
 	(void)ipc_mutex_unlock(&filebench_shm->shm_ism_lock);
 
-	return (0);
+	filebench_log(LOG_VERBOSE, "Allocated %zd bytes of ISM", size);
+	return FILEBENCH_OK;
 }
 
-/* Per addr space ism */
-static int ism_attached = 0;
-
 /*
- * Attach to interprocess shared memory. If already attached
- * just return, otherwise use shmat() to attached to the region
- * with ID of filebench_shm->shm_id. Returns -1 if shmat()
- * fails, otherwise 0.
+ * Attach already created ISM.
+ * Attached memory address is stored in filebench_ism
  */
 int
 ipc_ismattach(void)
 {
-#ifdef HAVE_SHM_SHARE_MMU
-	int flag = SHM_SHARE_MMU;
-#else
-	int flag = 0;
-#endif /* HAVE_SHM_SHARE_MMU */
+	// already attached
+	if (filebench_ism) {
+		return FILEBENCH_OK;
+	}
 
-	if (ism_attached)
-		return (0);
+	size_t size = filebench_shm->ism_required;
+	filebench_log(LOG_VERBOSE, "Attaching %zd bytes of ISM", size);
 
-	/* Does it exist? */
-	if (filebench_shm->shm_id == 999)
-		return (0);
+	int fd = shm_open(ismname, O_RDWR, 0);
+	if (fd == -1) {
+		filebench_log(LOG_ERROR, "Failed to open ISM: %s", strerror(errno));
+		return FILEBENCH_ERROR;
+	}
 
-	if (shmat(filebench_shm->shm_id, filebench_shm->shm_addr, flag) == NULL)
-		return (-1);
+	void *ism = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	if (ism == MAP_FAILED) {
+		filebench_log(LOG_ERROR, "Failed to map ISM: %s", strerror(errno));
+		return FILEBENCH_ERROR;
+	}
+	filebench_ism = ism;
+	(void)close(fd);
 
-	ism_attached = 1;
-
-	return (0);
+	filebench_log(LOG_VERBOSE, "Attached %zd bytes of ISM at %zx", size, ism);
+	return FILEBENCH_OK;
 }
 
-/*
- * Allocate from interprocess shared memory. Attaches to ism
- * if necessary, then allocates "size" bytes, updates allocation
- * information and returns a pointer to the allocated memory.
- */
-/*
- * XXX No check is made for out-of-memory condition
- */
-char *
-ipc_ismmalloc(size_t size)
-{
-	char *allocstr;
-
-	(void)ipc_mutex_lock(&filebench_shm->shm_ism_lock);
-
-	/* Map in shared memory */
-	(void)ipc_ismattach();
-
-	allocstr = filebench_shm->shm_ptr;
-
-	filebench_shm->shm_ptr += size;
-	filebench_shm->shm_allocated += size;
-
-	(void)ipc_mutex_unlock(&filebench_shm->shm_ism_lock);
-
-	return (allocstr);
-}
-
-/*
- * Deletes shared memory region and resets shared memory region
- * information in filebench_shm.
- */
+/* Delete (unlink) ISM */
 void
 ipc_ismdelete(void)
 {
-	if (filebench_shm->shm_id == -1)
-		return;
-
-	filebench_log(LOG_VERBOSE, "Deleting ISM...");
+	filebench_log(LOG_VERBOSE, "Deleting ISM");
+	filebench_ism = NULL;
 
 	(void)ipc_mutex_lock(&filebench_shm->shm_ism_lock);
-#ifdef HAVE_SEM_RMID
-	(void)shmctl(filebench_shm->shm_id, IPC_RMID, 0);
-#endif
-	filebench_shm->shm_ptr = (char *)filebench_shm->shm_addr;
-	filebench_shm->shm_id = -1;
-	filebench_shm->shm_allocated = 0;
+	(void)shm_unlink(ismname);
+	filebench_shm->ism_allocated = 0;
 	(void)ipc_mutex_unlock(&filebench_shm->shm_ism_lock);
+}
+
+/* Allocate from ISM. Returns offset into ISM on success, -1 on failure */
+ssize_t
+ipc_ismmalloc(size_t size)
+{
+	(void)ipc_mutex_lock(&filebench_shm->shm_ism_lock);
+
+	ssize_t ism_offfset = -1;
+
+	if (ipc_ismattach())
+		goto unlock;
+
+	if (filebench_shm->ism_allocated + size > filebench_shm->ism_required) {
+		filebench_log(LOG_ERROR, "Failed to allocate from ISM. Out of memory");
+		goto unlock;
+	}
+
+	ism_offfset = filebench_shm->ism_allocated;
+	filebench_shm->ism_allocated += size;
+
+unlock:
+	(void)ipc_mutex_unlock(&filebench_shm->shm_ism_lock);
+	return ism_offfset;
 }

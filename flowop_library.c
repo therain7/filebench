@@ -436,7 +436,7 @@ flowoplib_iobufsetup(threadflow_t *threadflow, flowop_t *flowop,
 
 	/* Use user specified custom buffer */
 	if (flowop->fo_bufname) {
-		buffer_t *buf = buffer_find_by_name(flowop->fo_bufname);
+		struct buffer *buf = buffer_find_by_name(flowop->fo_bufname);
 		if (!buf) {
 			filebench_log(LOG_ERROR, "Failed to find buffer %s",
 						  flowop->fo_bufname);
@@ -451,7 +451,7 @@ flowoplib_iobufsetup(threadflow_t *threadflow, flowop_t *flowop,
 			return FILEBENCH_ERROR;
 		}
 
-		*iobufp = buf->data;
+		*iobufp = filebench_ism + buf->ism_offset;
 		return FILEBENCH_OK;
 	}
 

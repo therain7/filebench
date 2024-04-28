@@ -5,51 +5,51 @@
  * workload, such as in the following example:
  * define buffer name=mybuffer,path=/opt/data/buf.txt,size=10000
  */
-buffer_t *
+struct buffer *
 buffer_define(char *name, char *path, size_t size)
 {
-	buffer_t *buffer = ipc_malloc(FILEBENCH_BUFFER);
-	if (!buffer) {
+	struct buffer *buf = ipc_malloc(FILEBENCH_BUFFER);
+	if (!buf) {
 		filebench_log(LOG_ERROR, "Can't allocate buffer %s", name);
 		return NULL;
 	}
 
 	filebench_log(LOG_DEBUG_IMPL, "Defining buffer %s", name);
 
-	buffer->name = name;
-	buffer->path = path;
-	buffer->size = size;
+	buf->name = name;
+	buf->path = path;
+	buf->size = size;
 
 	/* Add buffer to global list */
 	(void)ipc_mutex_lock(&filebench_shm->shm_buffer_lock);
 	if (filebench_shm->shm_bufferlist == NULL) {
-		filebench_shm->shm_bufferlist = buffer;
-		buffer->next = NULL;
+		filebench_shm->shm_bufferlist = buf;
+		buf->next = NULL;
 	} else {
-		buffer->next = filebench_shm->shm_bufferlist;
-		filebench_shm->shm_bufferlist = buffer;
+		buf->next = filebench_shm->shm_bufferlist;
+		filebench_shm->shm_bufferlist = buf;
 	}
 	(void)ipc_mutex_unlock(&filebench_shm->shm_buffer_lock);
 
-	/* Increase amount of required shared memory
-	 * as buffer's data will be allocted there */
-	filebench_shm->shm_required += size;
+	// increase amount of required ISM
+	// as buffer's data will be allocted there
+	filebench_shm->ism_required += size;
 
-	return buffer;
+	return buf;
 }
 
 static int
-buffer_allocate(buffer_t *buf)
+buffer_allocate(struct buffer *buf)
 {
 	filebench_log(LOG_INFO, "Allocating buffer %s", buf->name);
 
-	caddr_t data = ipc_ismmalloc(buf->size);
-	if (!data) {
+	ssize_t ism_offset = ipc_ismmalloc(buf->size);
+	if (ism_offset == -1) {
 		filebench_log(LOG_ERROR, "Can't allocate data for buffer %s",
 					  buf->name);
 		return FILEBENCH_ERROR;
 	}
-	buf->data = data;
+	buf->ism_offset = ism_offset;
 
 	/* Path is not specified */
 	if (!buf->path)
@@ -61,7 +61,7 @@ buffer_allocate(buffer_t *buf)
 					  buf->path);
 		return FILEBENCH_ERROR;
 	}
-	if (fread(data, 1, buf->size, file) != buf->size) {
+	if (fread(filebench_ism + ism_offset, 1, buf->size, file) != buf->size) {
 		filebench_log(LOG_ERROR,
 					  "Failed to read %d bytes from file %s to buffer",
 					  buf->size, buf->path);
@@ -80,7 +80,7 @@ buffer_allocate_all()
 
 	(void)ipc_mutex_lock(&filebench_shm->shm_buffer_lock);
 
-	buffer_t *buf = filebench_shm->shm_bufferlist;
+	struct buffer *buf = filebench_shm->shm_bufferlist;
 	while (buf) {
 		if ((ret = buffer_allocate(buf))) {
 			return ret;
@@ -94,12 +94,12 @@ buffer_allocate_all()
 }
 
 /* Finds buffer with specified name in global list */
-buffer_t *
+struct buffer *
 buffer_find_by_name(char *name)
 {
 	(void)ipc_mutex_lock(&filebench_shm->shm_buffer_lock);
 
-	buffer_t *buf = filebench_shm->shm_bufferlist;
+	struct buffer *buf = filebench_shm->shm_bufferlist;
 	while (buf) {
 		if (!strcmp(name, buf->name)) {
 			break;

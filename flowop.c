@@ -397,22 +397,26 @@ flowop_start(threadflow_t *threadflow)
 
 	memsize = (size_t)threadflow->tf_constmemsize;
 
-	/*
-	 * Alloc from ISM, which should have been created before the main process
-	 * wakes up the current process by releasing shm_run_lock.
-	 */
-	if (threadflow->tf_attrs & THREADFLOW_USEISM) {
-		threadflow->tf_mem = ipc_ismmalloc(memsize);
-	} else {
-		threadflow->tf_mem = malloc(memsize);
+	/* Make sure ISM is attached if required */
+	if (filebench_shm->ism_required) {
+		if (ipc_ismattach()) {
+			filebench_log(LOG_ERROR, "Failed to attach shared memory");
+			return;
+		}
 	}
 
-	/*
-	 * Make sure ISM is attached if buffers are defined
-	 * as their data is allocated there.
-	 */
-	if (filebench_shm->shm_bufferlist) {
-		(void)ipc_ismattach();
+	if (threadflow->tf_attrs & THREADFLOW_USEISM) {
+		ssize_t ism_offset = ipc_ismmalloc(memsize);
+		if (ism_offset == -1) {
+			filebench_log(LOG_ERROR,
+						  "Failed to allocate thread memory %zd bytes from ISM",
+						  memsize);
+			return;
+		}
+
+		threadflow->tf_mem = filebench_ism + ism_offset;
+	} else {
+		threadflow->tf_mem = malloc(memsize);
 	}
 
 	(void)memset(threadflow->tf_mem, 0, memsize);

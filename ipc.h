@@ -112,11 +112,10 @@ typedef struct filebench_shm {
 	pthread_mutex_t shm_fileset_lock;
 	procflow_t *shm_procflowlist;
 	pthread_mutex_t shm_procflow_lock;
-	/* threadflow_t	*shm_threadflowlist; (this one is per procflow) */
 	pthread_mutex_t shm_threadflow_lock;
 	flowop_t *shm_flowoplist;
 	pthread_mutex_t shm_flowop_lock;
-	buffer_t *shm_bufferlist;
+	struct buffer *shm_bufferlist;
 	pthread_mutex_t shm_buffer_lock;
 
 	/*
@@ -182,7 +181,6 @@ typedef struct filebench_shm {
 	 * Misc. pointers and state
 	 */
 	char shm_fscriptname[1024];
-	int shm_id;
 	int shm_rmode; /* run mode settings */
 	int shm_mmode; /* misc. mode settings */
 	int shm_1st_err;
@@ -200,10 +198,8 @@ typedef struct filebench_shm {
 	 * Shared memory allocation control
 	 */
 	pthread_mutex_t shm_ism_lock;
-	size_t shm_required;
-	size_t shm_allocated;
-	caddr_t shm_addr;
-	char *shm_ptr;
+	size_t ism_required;
+	size_t ism_allocated;
 
 	/*
 	 * Type of plug-in file system client to use. Defaults to
@@ -234,7 +230,7 @@ typedef struct filebench_shm {
 	 * when ipc_malloc() is called. Not zeroed, but
 	 * ipc_malloc() will bzero each allocated slot.
 	 */
-	buffer_t shm_buffer[FILEBENCH_NBUFFERS];
+	struct buffer shm_buffer[FILEBENCH_NBUFFERS];
 	fileset_t shm_fileset[FILEBENCH_NFILESETS];
 	filesetentry_t shm_filesetentry[FILEBENCH_NFILESETENTRIES];
 	procflow_t shm_procflow[FILEBENCH_NPROCFLOWS];
@@ -256,8 +252,9 @@ typedef struct filebench_shm {
 
 extern char shmpath[128];
 
-extern void ipc_init(void);
-extern int ipc_attach(void *shmaddr, char *shmpath);
+void ipc_init(void);
+int ipc_attach(void *shmaddr, char *shmpath);
+void ipc_fini(void);
 
 void *ipc_malloc(int type);
 void ipc_free(int type, char *addr);
@@ -273,12 +270,13 @@ void ipc_cvar_heapfree(void *ptr);
 int ipc_mutex_lock(pthread_mutex_t *mutex);
 int ipc_mutex_unlock(pthread_mutex_t *mutex);
 void ipc_seminit(void);
-char *ipc_ismmalloc(size_t size);
-int ipc_ismcreate(size_t size);
+
+int ipc_ismcreate(void);
 int ipc_ismattach(void);
 void ipc_ismdelete(void);
-void ipc_fini(void);
+ssize_t ipc_ismmalloc(size_t size);
 
 extern filebench_shm_t *filebench_shm;
+extern void *filebench_ism;
 
 #endif /* _FB_IPC_H */
