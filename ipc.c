@@ -824,6 +824,8 @@ ipc_ismcreate(void)
 		return FILEBENCH_ERROR;
 	}
 
+	int ret = FILEBENCH_ERROR;
+
 	size_t size = filebench_shm->ism_required;
 	filebench_log(LOG_VERBOSE, "Creating %zd bytes of ISM", size);
 
@@ -836,22 +838,25 @@ ipc_ismcreate(void)
 	if (ftruncate(fd, size) == -1) {
 		filebench_log(LOG_ERROR, "Failed to truncate ISM to %zd bytes: %s",
 					  size, strerror(errno));
-		return FILEBENCH_ERROR;
+		goto close_file;
 	}
 
 	void *ism = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if (ism == MAP_FAILED) {
 		filebench_log(LOG_ERROR, "Failed to map ISM: %s", strerror(errno));
-		return FILEBENCH_ERROR;
+		goto close_file;
 	}
 	filebench_ism = ism;
-	(void)close(fd);
 
 	// locked until allocated to block allocs
 	(void)ipc_mutex_unlock(&filebench_shm->shm_ism_lock);
 
 	filebench_log(LOG_VERBOSE, "Allocated %zd bytes of ISM", size);
-	return FILEBENCH_OK;
+	ret = FILEBENCH_OK;
+
+close_file:
+	(void)close(fd);
+	return ret;
 }
 
 /*
@@ -878,8 +883,10 @@ ipc_ismattach(void)
 	void *ism = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if (ism == MAP_FAILED) {
 		filebench_log(LOG_ERROR, "Failed to map ISM: %s", strerror(errno));
+		(void)close(fd);
 		return FILEBENCH_ERROR;
 	}
+
 	filebench_ism = ism;
 	(void)close(fd);
 

@@ -62,6 +62,7 @@ buffer_allocate(struct buffer *buf)
 		return FILEBENCH_ERROR;
 	}
 	if (fread(filebench_ism + ism_offset, 1, buf->size, file) != buf->size) {
+		fclose(file);
 		filebench_log(LOG_ERROR,
 					  "Failed to read %d bytes from file %s to buffer",
 					  buf->size, buf->path);
