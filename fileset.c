@@ -1696,7 +1696,7 @@ fileset_import(fileset_t *fileset)
 
 	/* check for raw device */
 	if (fileset->fs_attrs & FILESET_IS_RAW_DEV)
-		return (FILEBENCH_OK);
+		return FILEBENCH_OK;
 
 	char *fileset_path = avd_get_str(fileset->fs_path);
 	if (!fileset_path) {
@@ -1729,6 +1729,7 @@ fileset_import(fileset_t *fileset)
 			if ((ret = fileset_add_file(fileset, parent, entry->fts_name,
 										entry->fts_statp->st_size,
 										&file_entry))) {
+				(void)fts_close(ftree);
 				return ret;
 			}
 			fileset_unbusy(file_entry, TRUE, TRUE, 0); // mark as existant
@@ -1745,6 +1746,7 @@ fileset_import(fileset_t *fileset)
 
 			if ((ret = fileset_create_dir(fileset, parent, entry->fts_name,
 										  &parent))) {
+				(void)fts_close(ftree);
 				return ret;
 			}
 
@@ -1769,11 +1771,7 @@ fileset_import(fileset_t *fileset)
 		}
 	}
 
-	if (fts_close(ftree)) {
-		filebench_log(LOG_ERROR, "Failed to close import directory %s",
-					  fileset_path);
-		return FILEBENCH_ERROR;
-	}
+	(void)fts_close(ftree);
 
 	fileset->fs_constentries = fileset->fs_realfiles;
 	fileset->fs_constleafdirs = fileset->fs_realleafdirs;
