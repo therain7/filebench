@@ -126,6 +126,8 @@ paralloc                { return FSA_PARALLOC; }
 import                  { return FSA_IMPORT; }
 parameters              { return FSA_PARAMETERS; }
 path                    { return FSA_PATH; }
+data                    { return FSA_DATA; }
+segments                { return FSA_SEGMENTS; }
 prealloc                { return FSA_PREALLOC; }
 random                  { return FSA_RANDOM;}
 randsrc			{ return FSA_RANDSRC; }

@@ -205,3 +205,37 @@ fb_set_rlimit(void)
 	return;
 }
 #endif /* HAVE_SETRLIMIT */
+
+char *
+read_entire_file(char *path)
+{
+	FILE *file = fopen(path, "rb");
+	if (!file) {
+		filebench_log(LOG_ERROR, "Failed to open file %s", path);
+		return NULL;
+	}
+
+	(void)fseek(file, 0, SEEK_END);
+	uint64_t fsize = ftell(file);
+	(void)fseek(file, 0, SEEK_SET);
+
+	char *fcontents = NULL;
+	if (!(fcontents = malloc(fsize + 1))) {
+		filebench_log(LOG_ERROR, "Malloc failed for file's (%s) contents",
+					  path);
+		goto close_file;
+	}
+
+	if (fread(fcontents, 1, fsize, file) != fsize) {
+		filebench_log(LOG_ERROR, "Failed to read %d bytes from file %s", fsize,
+					  path);
+		free(fcontents);
+		fcontents = NULL;
+		goto close_file;
+	}
+	fcontents[fsize] = 0;
+
+close_file:
+	(void)fclose(file);
+	return fcontents;
+}
