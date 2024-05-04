@@ -75,6 +75,7 @@
  * has to increase these values
  */
 #define FILEBENCH_NBUFFERS (16)
+#define FILEBENCH_NBUFSEGMENTS (16 * 1024)
 #define FILEBENCH_NFILESETS (16)
 #define FILEBENCH_NFILESETENTRIES (1024 * 1024)
 #define FILEBENCH_NPROCFLOWS (1024)
@@ -188,6 +189,7 @@ typedef struct filebench_shm {
 	pthread_mutexattr_t shm_mutexattr[IPC_NUM_MUTEX_ATTRS];
 	char *shm_string_ptr;
 	char *shm_path_ptr;
+	struct buf_segment *shm_bufsegment_ptr;
 	hrtime_t shm_epoch;
 	hrtime_t shm_starttime;
 	int shm_utid;
@@ -247,6 +249,7 @@ typedef struct filebench_shm {
 	char shm_strings[FILEBENCH_STRINGMEMORY];
 	char shm_filesetpaths[FILEBENCH_FILESETPATHMEMORY];
 	char shm_cvar_heap[FILEBENCH_CVAR_HEAPSIZE];
+	struct buf_segment shm_bufsegments[FILEBENCH_NBUFSEGMENTS];
 
 } filebench_shm_t;
 
@@ -270,6 +273,8 @@ void ipc_cvar_heapfree(void *ptr);
 int ipc_mutex_lock(pthread_mutex_t *mutex);
 int ipc_mutex_unlock(pthread_mutex_t *mutex);
 void ipc_seminit(void);
+
+struct buf_segment *ipc_buf_segments_alloc(uint64_t amount);
 
 int ipc_ismcreate(void);
 int ipc_ismattach(void);

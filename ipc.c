@@ -334,6 +334,7 @@ ipc_init(void)
 	filebench_shm->shm_rmode = FILEBENCH_MODE_TIMEOUT;
 	filebench_shm->shm_string_ptr = &filebench_shm->shm_strings[0];
 	filebench_shm->shm_path_ptr = &filebench_shm->shm_filesetpaths[0];
+	filebench_shm->shm_bufsegment_ptr = &filebench_shm->shm_bufsegments[0];
 
 	(void)pthread_mutex_init(&filebench_shm->shm_fileset_lock,
 							 ipc_mutexattr(IPC_MUTEX_NORMAL));
@@ -810,6 +811,25 @@ void
 ipc_semidfree(int semid)
 {
 	filebench_shm->shm_semids[semid] = 0;
+}
+
+/*
+ * Allocates buffer segments from filebench_shm.
+ * XXX: not thread safe
+ */
+struct buf_segment *
+ipc_buf_segments_alloc(uint64_t amount)
+{
+	struct buf_segment *alloc = filebench_shm->shm_bufsegment_ptr;
+	filebench_shm->shm_bufsegment_ptr += amount;
+
+	if ((filebench_shm->shm_bufsegment_ptr -
+		 &filebench_shm->shm_bufsegments[0]) > FILEBENCH_NBUFSEGMENTS) {
+		filebench_log(LOG_ERROR, "Out of buffer segments memory");
+		return NULL;
+	}
+
+	return alloc;
 }
 
 /*

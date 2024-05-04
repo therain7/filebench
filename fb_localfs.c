@@ -298,7 +298,7 @@ fb_lfsflow_aiowrite(threadflow_t *threadflow, flowop_t *flowop)
 	iosize = avd_get_int(flowop->fo_iosize);
 
 	if ((ret = flowoplib_iosetup(threadflow, flowop, &wss, &iobuf, &fdesc,
-								 iosize)) != FILEBENCH_OK)
+								 &iosize)) != FILEBENCH_OK)
 		return (ret);
 
 	if (avd_get_bool(flowop->fo_random)) {

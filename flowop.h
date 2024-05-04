@@ -138,7 +138,8 @@ int flowop_init_generic(flowop_t *flowop);
 void flowop_destruct_generic(flowop_t *flowop);
 void flowop_add_from_proto(flowop_proto_t *list, int nops);
 int flowoplib_iosetup(threadflow_t *threadflow, flowop_t *flowop, fbint_t *wssp,
-					  caddr_t *iobufp, fb_fdesc_t **filedescp, fbint_t iosize);
+					  caddr_t *iobufp, fb_fdesc_t **filedescp,
+					  fbint_t *iosizep);
 void flowoplib_flowinit(void);
 void flowop_delete_all(flowop_t **threadlist);
 void flowop_endop(threadflow_t *threadflow, flowop_t *flowop, int64_t bytes);

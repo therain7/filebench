@@ -138,7 +138,7 @@ static void parser_enable_lathist(cmd_t *cmd);
 %token FSK_SEPLST FSK_OPENLST FSK_CLOSELST FSK_OPENPAR FSK_CLOSEPAR FSK_ASSIGN
 %token FSK_IN FSK_QUOTE
 
-%token FSA_SIZE FSA_PREALLOC FSA_PARALLOC FSA_PATH FSA_REUSE
+%token FSA_SIZE FSA_PREALLOC FSA_PARALLOC FSA_PATH FSA_REUSE FSA_DATA FSA_SEGMENTS
 %token FSA_IMPORT FSA_MEMSIZE FSA_RATE FSA_READONLY FSA_TRUSTTREE
 %token FSA_IOSIZE FSA_FILENAME FSA_WSS FSA_NAME FSA_RANDOM FSA_INSTANCES
 %token FSA_DSYNC FSA_TARGET FSA_ITERS FSA_NICE FSA_VALUE FSA_BLOCKING
@@ -1077,8 +1077,8 @@ multisync_op: FSA_VALUE FSK_ASSIGN attr_value
  */
 attrs_define_buffer:
   FSA_NAME { $$ = FSA_NAME;}
-| FSA_PATH { $$ = FSA_PATH;}
-| FSA_SIZE { $$ = FSA_SIZE;}
+| FSA_DATA { $$ = FSA_DATA;}
+| FSA_SEGMENTS { $$ = FSA_SEGMENTS;}
 
 attrs_define_proc:
   FSA_NAME { $$ = FSA_NAME;}
@@ -1895,21 +1895,25 @@ parser_buffer_define(cmd_t *cmd)
 		filebench_shutdown(1);
 	}
 
-	char *path = NULL;
-	attr = get_attr(cmd, FSA_PATH);
+	char *data_path;
+	attr = get_attr(cmd, FSA_DATA);
 	if (attr)
-		path = avd_get_str(attr->attr_avd);
-
-	size_t size;
-	attr = get_attr(cmd, FSA_SIZE);
-	if (attr)
-		size = avd_get_int(attr->attr_avd);
+		data_path = avd_get_str(attr->attr_avd);
 	else {
-		filebench_log(LOG_ERROR, "Buffer specifies no size");
+		filebench_log(LOG_ERROR, "Buffer specifies no data path");
 		filebench_shutdown(1);
 	}
 
-	struct buffer *buffer = buffer_define(name, path, size);
+	char *segments_path;
+	attr = get_attr(cmd, FSA_SEGMENTS);
+	if (attr)
+		segments_path = avd_get_str(attr->attr_avd);
+	else {
+		filebench_log(LOG_ERROR, "Buffer specifies no segments path");
+		filebench_shutdown(1);
+	}
+
+	struct buffer *buffer = buffer_define(name, data_path, segments_path);
 	if (!buffer) {
 		filebench_log(LOG_ERROR, "Failed to define buffer %s", name);
 		filebench_shutdown(1);
