@@ -1,4 +1,76 @@
 #include "filebench.h"
+#include "utils.h"
+
+/* Parses buffer segments from file. Sets relevant fields of buffer structure */
+static int
+parse_segments(char *segments_path, struct buffer *buf)
+{
+	int ret = FILEBENCH_ERROR;
+
+	char *fcontents = read_entire_file(segments_path);
+	if (!fcontents) {
+		return FILEBENCH_ERROR;
+	}
+
+	uint64_t lines = 0;
+	for (uint64_t i = 0; fcontents[i] != 0; i++) {
+		if (fcontents[i] == '\n')
+			lines++;
+	}
+
+	struct buf_segment *segments = ipc_buf_segments_alloc(lines);
+	if (!segments) {
+		filebench_log(LOG_ERROR, "Allocation failed for buffer segments");
+		goto free_contents;
+	}
+
+	uint64_t max_seg_end = 0;
+	char *str = fcontents;
+	for (uint64_t i = 0; i < lines; i++) {
+		char *line_right = strsep(&str, "\n");
+		char *line_left = strsep(&line_right, ":");
+
+		if (line_right == NULL) {
+			filebench_log(LOG_ERROR, "Failed to parse segments file");
+			goto free_contents;
+		}
+
+		char *endptr;
+		uint64_t seg_start = strtoull(line_left, &endptr, 10);
+		if (*endptr != '\0') {
+			filebench_log(LOG_ERROR, "Failed to parse segment's starting byte");
+			goto free_contents;
+		}
+
+		uint64_t seg_end = strtoull(line_right, &endptr, 10);
+		if (*endptr != '\0') {
+			filebench_log(LOG_ERROR, "Failed to parse segment's ending byte");
+			goto free_contents;
+		}
+
+		if (seg_start > seg_end) {
+			filebench_log(LOG_ERROR, "Invalid segment %llu:%llu", seg_start,
+						  seg_end);
+			goto free_contents;
+		}
+
+		if (seg_end > max_seg_end)
+			max_seg_end = seg_end;
+
+		segments[i] = (struct buf_segment){.start = seg_start,
+										   .size = seg_end - seg_start + 1};
+	}
+
+	buf->segments = segments;
+	buf->segments_amount = lines;
+	buf->segment_head = 0;
+	buf->size = max_seg_end;
+	ret = FILEBENCH_OK;
+
+free_contents:
+	free(fcontents);
+	return ret;
+}
 
 /*
  * This routine implements the 'define buffer' calls found in a .f
@@ -6,7 +78,7 @@
  * define buffer name=mybuffer,path=/opt/data/buf.txt,size=10000
  */
 struct buffer *
-buffer_define(char *name, char *path, size_t size)
+buffer_define(char *name, char *data_path, char *segments_path)
 {
 	struct buffer *buf = ipc_malloc(FILEBENCH_BUFFER);
 	if (!buf) {
@@ -17,8 +89,11 @@ buffer_define(char *name, char *path, size_t size)
 	filebench_log(LOG_DEBUG_IMPL, "Defining buffer %s", name);
 
 	buf->name = name;
-	buf->path = path;
-	buf->size = size;
+	buf->data_path = data_path;
+
+	if (parse_segments(segments_path, buf)) {
+		return NULL;
+	}
 
 	/* Add buffer to global list */
 	(void)ipc_mutex_lock(&filebench_shm->shm_buffer_lock);
@@ -33,7 +108,7 @@ buffer_define(char *name, char *path, size_t size)
 
 	// increase amount of required ISM
 	// as buffer's data will be allocted there
-	filebench_shm->ism_required += size;
+	filebench_shm->ism_required += buf->size;
 
 	return buf;
 }
@@ -51,33 +126,32 @@ buffer_allocate(struct buffer *buf)
 	}
 	buf->ism_offset = ism_offset;
 
-	/* Path is not specified */
-	if (!buf->path)
-		return FILEBENCH_OK;
-
-	FILE *file;
-	if (!(file = fopen(buf->path, "r"))) {
-		filebench_log(LOG_ERROR, "Failed to open file %s to allocate buffer",
-					  buf->path);
+	FILE *file = fopen(buf->data_path, "rb");
+	if (!file) {
+		filebench_log(LOG_ERROR, "Failed to open file %s to allocate buffer %s",
+					  buf->data_path, buf->name);
 		return FILEBENCH_ERROR;
 	}
 	if (fread(filebench_ism + ism_offset, 1, buf->size, file) != buf->size) {
-		fclose(file);
+		(void)fclose(file);
 		filebench_log(LOG_ERROR,
-					  "Failed to read %d bytes from file %s to buffer",
-					  buf->size, buf->path);
+					  "Failed to read %d bytes from file %s to buffer %s",
+					  buf->size, buf->data_path, buf->name);
 		return FILEBENCH_ERROR;
 	}
-	fclose(file);
+	(void)fclose(file);
 
 	return FILEBENCH_OK;
 }
 
-/* Allocates all buffers in global list */
+/*
+ * Allocates memory for all buffers
+ * and reads data files into them.
+ */
 int
 buffer_allocate_all()
 {
-	int ret = 0;
+	int ret;
 
 	(void)ipc_mutex_lock(&filebench_shm->shm_buffer_lock);
 

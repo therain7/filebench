@@ -45,4 +45,6 @@ extern size_t fb_strlcpy(char *dst, const char *src, size_t dstsize);
 extern void fb_set_shmmax(void);
 void fb_set_rlimit(void);
 
+char *read_entire_file(char *path);
+
 #endif /* _FB_UTILS_H */

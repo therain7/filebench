@@ -416,19 +416,17 @@ flowoplib_filesetup(threadflow_t *threadflow, flowop_t *flowop, fbint_t *wssp,
 
 /*
  * Determines the io buffer or random offset into tf_mem for
- * the IO operation. Returns FILEBENCH_ERROR on errors, FILEBENCH_OK otherwise.
+ * the IO operation. Accepts pointer to desired iosize value.
+ * May change iosize if necessary.
+ * Returns FILEBENCH_ERROR on errors, FILEBENCH_OK otherwise.
  */
 static int
 flowoplib_iobufsetup(threadflow_t *threadflow, flowop_t *flowop,
-					 caddr_t *iobufp, fbint_t iosize)
+					 caddr_t *iobufp, fbint_t *iosizep)
 {
 	long memsize;
 	size_t memoffset;
-
-	if (iosize == 0) {
-		filebench_log(LOG_ERROR, "zero iosize for thread %s", flowop->fo_name);
-		return (FILEBENCH_ERROR);
-	}
+	fbint_t iosize = *iosizep;
 
 	/* If directio, we need to align buffer address by sector */
 	if (flowoplib_fileattrs(flowop) & FLOW_ATTR_DIRECTIO)
@@ -436,6 +434,12 @@ flowoplib_iobufsetup(threadflow_t *threadflow, flowop_t *flowop,
 
 	/* Use user specified custom buffer */
 	if (flowop->fo_bufname) {
+		if (iosize) {
+			filebench_log(LOG_ERROR,
+						  "Buffers can only be used with iosize set to 0");
+			return FILEBENCH_ERROR;
+		}
+
 		struct buffer *buf = buffer_find_by_name(flowop->fo_bufname);
 		if (!buf) {
 			filebench_log(LOG_ERROR, "Failed to find buffer %s",
@@ -443,16 +447,33 @@ flowoplib_iobufsetup(threadflow_t *threadflow, flowop_t *flowop,
 			return FILEBENCH_ERROR;
 		}
 
-		if (buf->size < iosize) {
+		if (buf->segment_head == buf->segments_amount) {
 			filebench_log(
-				LOG_ERROR,
-				"%s buffer's size is smaller than IO size for thread %s",
-				buf->name, flowop->fo_name);
-			return FILEBENCH_ERROR;
+				LOG_INFO,
+				"%s: reached the end of buffer %s segments in flowop %s-%d",
+				threadflow->tf_name, buf->name, flowop->fo_name,
+				flowop->fo_instance);
+			return FILEBENCH_NORSC;
 		}
 
-		*iobufp = filebench_ism + buf->ism_offset;
+		struct buf_segment current_seg = buf->segments[buf->segment_head];
+		filebench_log(
+			LOG_DEBUG_IMPL,
+			"%s: using buffer %s segment start=%llu, size=%llu in flowop %s-%d",
+			threadflow->tf_name, buf->name, current_seg.start, current_seg.size,
+			flowop->fo_name, flowop->fo_instance);
+
+		*iobufp = filebench_ism + buf->ism_offset + current_seg.start;
+		*iosizep = current_seg.size;
+
+		buf->segment_head++;
+
 		return FILEBENCH_OK;
+	}
+
+	if (iosize == 0) {
+		filebench_log(LOG_ERROR, "zero iosize for thread %s", flowop->fo_name);
+		return (FILEBENCH_ERROR);
 	}
 
 	if ((memsize = threadflow->tf_constmemsize) != 0) {
@@ -498,11 +519,12 @@ flowoplib_iobufsetup(threadflow_t *threadflow, flowop_t *flowop,
 /*
  * Determines the file descriptor to use, opens it if necessary, the
  * io buffer or random offset into tf_mem for IO operation and the wss
- * value. Returns FILEBENCH_ERROR on errors, FILEBENCH_OK otherwise.
+ * value. Accepts pointer to desired iosize value. May change iosize if
+ * necessary. Returns FILEBENCH_ERROR on errors, FILEBENCH_OK otherwise.
  */
 int
 flowoplib_iosetup(threadflow_t *threadflow, flowop_t *flowop, fbint_t *wssp,
-				  caddr_t *iobufp, fb_fdesc_t **filedescp, fbint_t iosize)
+				  caddr_t *iobufp, fb_fdesc_t **filedescp, fbint_t *iosizep)
 {
 	int ret;
 
@@ -510,7 +532,7 @@ flowoplib_iosetup(threadflow_t *threadflow, flowop_t *flowop, fbint_t *wssp,
 		FILEBENCH_OK)
 		return (ret);
 
-	if ((ret = flowoplib_iobufsetup(threadflow, flowop, iobufp, iosize)) !=
+	if ((ret = flowoplib_iobufsetup(threadflow, flowop, iobufp, iosizep)) !=
 		FILEBENCH_OK)
 		return (ret);
 
@@ -545,7 +567,7 @@ flowoplib_read(threadflow_t *threadflow, flowop_t *flowop)
 	iosize = avd_get_int(flowop->fo_iosize);
 
 	if ((ret = flowoplib_iosetup(threadflow, flowop, &wss, &iobuf, &fdesc,
-								 iosize)) != FILEBENCH_OK)
+								 &iosize)) != FILEBENCH_OK)
 		return (ret);
 
 	if (avd_get_bool(flowop->fo_random)) {
@@ -2213,7 +2235,7 @@ flowoplib_readwholefile(threadflow_t *threadflow, flowop_t *flowop)
 		filebench_log(LOG_DEBUG_SCRIPT, "flowop %s read zero length file",
 					  flowop->fo_name);
 	} else {
-		if (flowoplib_iobufsetup(threadflow, flowop, &iobuf, iosize) != 0)
+		if (flowoplib_iobufsetup(threadflow, flowop, &iobuf, &iosize) != 0)
 			return (FILEBENCH_ERROR);
 	}
 
@@ -2260,7 +2282,7 @@ flowoplib_write(threadflow_t *threadflow, flowop_t *flowop)
 
 	iosize = avd_get_int(flowop->fo_iosize);
 	if ((ret = flowoplib_iosetup(threadflow, flowop, &wss, &iobuf, &fdesc,
-								 iosize)) != FILEBENCH_OK)
+								 &iosize)) != FILEBENCH_OK)
 		return (ret);
 
 	if (avd_get_bool(flowop->fo_random)) {
@@ -2353,7 +2375,7 @@ flowoplib_writewholefile(threadflow_t *threadflow, flowop_t *flowop)
 		filebench_log(LOG_DEBUG_SCRIPT, "flowop %s wrote zero length file",
 					  flowop->fo_name);
 	} else {
-		if (flowoplib_iobufsetup(threadflow, flowop, &iobuf, iosize) != 0)
+		if (flowoplib_iobufsetup(threadflow, flowop, &iobuf, &iosize) != 0)
 			return (FILEBENCH_ERROR);
 	}
 
@@ -2413,7 +2435,7 @@ flowoplib_appendfile(threadflow_t *threadflow, flowop_t *flowop)
 
 	iosize = avd_get_int(flowop->fo_iosize);
 	if ((ret = flowoplib_iosetup(threadflow, flowop, &wss, &iobuf, &fdesc,
-								 iosize)) != FILEBENCH_OK)
+								 &iosize)) != FILEBENCH_OK)
 		return (ret);
 
 	/* XXX wss is not being used */
@@ -2474,7 +2496,7 @@ flowoplib_appendfilerand(threadflow_t *threadflow, flowop_t *flowop)
 	}
 
 	if ((ret = flowoplib_iosetup(threadflow, flowop, &wss, &iobuf, &fdesc,
-								 appendsize)) != FILEBENCH_OK)
+								 &appendsize)) != FILEBENCH_OK)
 		return (ret);
 
 	/* XXX wss is not being used */
